@@ -1,6 +1,9 @@
 <div align="center">
-  <img width="400" alt="League of Legends Logo" src="https://github.com/user-attachments/assets/78d634ba-8997-4168-bf9e-4bb424d4b8f7" />
+  <img width="400" alt="image" src="https://github.com/user-attachments/assets/7ba83f6d-afd9-4650-9b2d-4c2c87e7f01e" />
 </div>
+
+
+
 
 # League of Legends Esports 2024 - AI Match Prediction
 
