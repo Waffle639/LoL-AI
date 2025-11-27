@@ -1,0 +1,43 @@
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+*.venv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Data (optional - uncomment if you don't want to track large datasets)
+# data/*.csv
+# *.csv
+
+# Models
+*.pkl
+*.joblib
+*.h5
+*.model
