@@ -9,9 +9,9 @@
 
 Machine learning project with two prediction models for League of Legends professional matches using 2024 esports data.
 
-## Two Prediction Models
+## Three Prediction Models
 
-### 1. Pre-Game Prediction (`IA_LoL_Prediccion_Pre_Game.ipynb`)
+### Pre-Game Prediction - Random Forest (`IA_LoL_Prediccion_Pre_Game.ipynb`)
 Predicts match winner **before** the game starts using historical data:
 - Team winrates
 - Player performance & KDA
@@ -21,7 +21,16 @@ Predicts match winner **before** the game starts using historical data:
 
 **Algorithm**: RandomForestClassifier (200 trees, max_depth 15)
 
-### 2. In-Game Prediction (`IA_LoL.ipynb`)
+### Pre-Game Prediction - Neural Network (`IA_LoL_NeuralNetwork.ipynb`)
+Same pre-game prediction using deep learning:
+- PyTorch neural network (24 → 64 → 32 → 1)
+- Selective feature scaling (numeric features only)
+- Binary cross-entropy loss with Adam optimizer
+- Dropout regularization (0.2) to prevent overfitting
+
+**Algorithm**: PyTorch Neural Network
+
+### In-Game Prediction (`IA_LoL.ipynb`)
 Predicts match winner based on in-game statistics:
 - Kills, Deaths, Assists
 - Team performance
@@ -32,7 +41,7 @@ Predicts match winner based on in-game statistics:
 **Algorithm**: SGDClassifier
 
 
-## 🔧 Technologies Used
+## Technologies Used
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" width="50" alt="Python"/>
@@ -40,6 +49,7 @@ Predicts match winner based on in-game statistics:
   <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/numpy/numpy-original.svg" width="50" alt="NumPy"/>
   <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/matplotlib/matplotlib-original.svg" width="50" alt="Matplotlib"/>
   <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/scikitlearn/scikitlearn-original.svg" width="50" alt="scikit-learn"/>
+  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/pytorch/pytorch-original.svg" width="50" alt="PyTorch"/>
   <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/jupyter/jupyter-original.svg" width="50" alt="Jupyter"/>
 </div>
 
@@ -49,8 +59,9 @@ Predicts match winner based on in-game statistics:
 - **pandas** - Data manipulation and analysis
 - **numpy** - Numerical computations
 - **matplotlib & seaborn** - Data visualization
-- **scikit-learn** - Machine learning (RandomForestClassifier, SGDClassifier, LabelEncoder)
-- **Jupyter Notebook** - Interactive development environment
+- **scikit-learn** - Machine learning (RandomForestClassifier, SGDClassifier, LabelEncoder, StandardScaler)
+- **PyTorch** - Deep learning framework for neural networks
+## Datasetotebook** - Interactive development environment
 
 ## 📊 Dataset
 
@@ -60,21 +71,24 @@ Predicts match winner based on in-game statistics:
 - **Players**: 1,305 unique players
 - **Champions**: 147 different champions
 
-## 🚀 How to Run
+## How to Run
 
-1. **Install Dependencies**
-   ```bash
-   pip install pandas numpy matplotlib seaborn scikit-learn
-   ```
+**Install Dependencies**
+```bash
+pip install pandas numpy matplotlib seaborn scikit-learn torch
+```
 
-2. **Open Notebooks**
-   ```bash
-   # Pre-game prediction
-   jupyter notebook IA_LoL_Prediccion_Pre_Game.ipynb
-   
-   # In-game prediction
-   jupyter notebook IA_LoL.ipynb
-   ```
+**Open Notebooks**
+```bash
+# Pre-game prediction (Random Forest)
+jupyter notebook IA_LoL_Prediccion_Pre_Game.ipynb
+
+# Pre-game prediction (Neural Network)
+jupyter notebook IA_LoL_NeuralNetwork.ipynb
+
+# In-game prediction
+jupyter notebook IA_LoL.ipynb
+```
 
 ## Real Match Example
 
