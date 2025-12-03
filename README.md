@@ -7,20 +7,29 @@
 
 # League of Legends Esports 2024 - AI Match Prediction
 
-A machine learning project that predicts League of Legends professional match outcomes based on in-game statistics using 2024 esports data.
+Machine learning project with two prediction models for League of Legends professional matches using 2024 esports data.
 
-## Project Overview
+## Two Prediction Models
 
-This project analyzes professional League of Legends matches from 2024 and builds a classification model to predict whether a player/team will win or lose based on in-game performance metrics.
+### 1. Pre-Game Prediction (`IA_LoL_Prediccion_Pre_Game.ipynb`)
+Predicts match winner **before** the game starts using historical data:
+- Team winrates
+- Player performance & KDA
+- Champion winrates  
+- Player-champion mastery
+- Full 5v5 team composition analysis
 
-## What Does It Do?
+**Algorithm**: RandomForestClassifier (200 trees, max_depth 15)
 
-The AI model learns patterns from thousands of professional matches and can predict match outcomes using statistics like:
-- Kills, Deaths, Assists (KDA)
-- Team performance (team kills/deaths)
+### 2. In-Game Prediction (`IA_LoL.ipynb`)
+Predicts match winner based on in-game statistics:
+- Kills, Deaths, Assists
+- Team performance
 - Objective control (Dragons, Barons, Elders)
-- Map control (Towers destroyed)
+- Map control (Towers)
 - Gold earned
+
+**Algorithm**: SGDClassifier
 
 
 ## 🔧 Technologies Used
@@ -40,93 +49,66 @@ The AI model learns patterns from thousands of professional matches and can pred
 - **pandas** - Data manipulation and analysis
 - **numpy** - Numerical computations
 - **matplotlib & seaborn** - Data visualization
-- **scikit-learn** - Machine learning (SGDClassifier model)
+- **scikit-learn** - Machine learning (RandomForestClassifier, SGDClassifier, LabelEncoder)
 - **Jupyter Notebook** - Interactive development environment
 
-## Dataset
+## 📊 Dataset
 
 - **Source**: [League of Legends 2024 Competitive Game Dataset (Kaggle)](https://www.kaggle.com/datasets/barthetur/league-of-legends-2024-competitive-game-dataset)
-- **Content**: Player-level statistics from professional League of Legends matches
-- **Key Features**: 14 important columns selected from 140+ available columns
+- **Size**: 12,276 player records
+- **Teams**: 253 professional teams
+- **Players**: 1,305 unique players
+- **Champions**: 147 different champions
 
-## How to Run
+## 🚀 How to Run
 
 1. **Install Dependencies**
    ```bash
    pip install pandas numpy matplotlib seaborn scikit-learn
    ```
 
-2. **Open the Notebook**
+2. **Open Notebooks**
    ```bash
+   # Pre-game prediction
+   jupyter notebook IA_LoL_Prediccion_Pre_Game.ipynb
+   
+   # In-game prediction
    jupyter notebook IA_LoL.ipynb
    ```
 
-3. **Run All Cells**
-   - Execute cells sequentially from top to bottom
-   - The notebook will load data, train the model, and make predictions
+## Real Match Example
 
-## Notebook Sections
+**G2 Esports vs MAD Lions KOI** (Game ID: LOLTMNT05_13119)
 
-### 1. **Data Loading**
-- Imports the CSV file with 2024 esports match data
-- Displays basic dataset information (dimensions, data types)
+```
+G2 ESPORTS (Blue side)          MAD LIONS KOI (Red side)
+BrokenBlade - K'Sante (top)     Myrwn - Gwen (top)
+Yike - Vi (jng)                 Elyoya - Viego (jng)
+Caps - Azir (mid)               Fresskowy - Neeko (mid)
+Hans Sama - Varus (bot)         Supa - Ashe (bot)
+Mikyx - Zyra (sup)              Alvaro - Renata Glasc (sup)
 
-### 2. **Data Cleaning**
-- Selects 14 most important features:
-  - Individual stats: `kills`, `deaths`, `assists`
-  - Team stats: `teamkills`, `teamdeaths`
-  - Objectives: `dragons`, `opp_dragons`, `elders`, `opp_elders`, `barons`, `opp_barons`
-  - Map control: `towers`, `opp_towers`
-  - Economy: `totalgold`
-  - Target: `result` (0 = defeat, 1 = victory)
-- Replaces missing values (NaN) with 0
+Model Prediction: G2 77.8% | MAD 22.2%
+Actual Winner: G2 Esports ✓
+```
 
-### 3. **Correlation Matrix**
-- Visualizes relationships between all features
-- Shows which features correlate positively/negatively with victory
-- **Key insights**:
-  - Own towers/objectives → Positive correlation with victory
-  - Enemy towers/objectives → Negative correlation with victory
+## In-Game Prediction Notebook Sections
 
-### 4. **Machine Learning Preparation**
-- Splits data into training (70%) and test (30%) sets
-- Uses stratification to maintain class balance (50/50 wins/losses)
-- Displays distribution of victories and defeats in each set
+1. Data Loading & Cleaning
+2. Correlation Matrix (feature analysis)
+3. Train/Test Split (70/30)
+4. SGDClassifier Training
+5. Confusion Matrix & Metrics
+6. Example Predictions
 
-### 5. **Model Training**
-- **Algorithm**: SGDClassifier (Stochastic Gradient Descent)
-- **Features**: 
-  - Loss function: `log_loss` (logistic regression)
-  - Regularization: L2 penalty (alpha=0.0001)
-  - Learning rate: constant (eta0=0.001)
-- **Data preprocessing**: StandardScaler to normalize features
-- **Evaluation metrics**:
-  - Accuracy (train and test)
-  - R² (Coefficient of Determination)
-  - MSE/RMSE (Mean Squared Error)
-  - MAE (Mean Absolute Error)
+## Pre-Game Prediction Notebook Sections
 
-### 6. **Confusion Matrix**
-- Visual representation of model predictions
-- Shows:
-  - True Positives: Victories correctly predicted
-  - True Negatives: Defeats correctly predicted
-  - False Positives: Defeats predicted as victories
-  - False Negatives: Victories predicted as defeats
-- Displays Precision, Recall, and F1-Score
-
-### 7. **New Predictions**
-- Tests the model with 5 example scenarios:
-  1. **Dominant team**: High towers, objectives, gold → Predicts Victory
-  2. **Losing team**: Low towers, no objectives → Predicts Defeat
-  3. **Balanced match**: Even stats → Uncertain prediction
-  4. **Extreme advantage**: Overwhelming stats → Strong Victory prediction
-  5. **Extreme disadvantage**: Poor stats → Strong Defeat prediction
-
-## 📈 Model Performance
-
-The model achieves:
-- **High accuracy** on both training and test sets
-- **Balanced performance** (similar precision/recall for both classes)
-- **Reliable predictions** for matches with clear stat advantages
+1. Load & Explore Data
+2. Create Historical Features (team winrate, player KDA, champion winrate, player-champion mastery)
+3. Correlation Matrix (team_winrate: +0.49 strongest)
+4. Encode Variables & Prepare Features (10 total features)
+5. Train RandomForest Model (80/20 split)
+6. Confusion Matrix & Evaluation
+7. Team vs Team Prediction Function
+8. Real Match Recreation (G2 vs MAD Lions)
 
