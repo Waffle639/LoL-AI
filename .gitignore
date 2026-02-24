@@ -4,6 +4,7 @@ venv/
 env/
 ENV/
 *.venv
+.env
 
 # Python
 __pycache__/
@@ -32,12 +33,17 @@ build/
 Thumbs.db
 desktop.ini
 
-# Data (optional - uncomment if you don't want to track large datasets)
-# data/*.csv
-# *.csv
+# Data (optional - uncomment if you don't want to track large datasets) 
+data/
+*.csv
+.parquet
+
+
 
 # Models
 *.pkl
 *.joblib
 *.h5
 *.model
+.pth
+models/

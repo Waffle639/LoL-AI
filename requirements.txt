@@ -1,0 +1,17 @@
+# Core ML (from Session 1)
+numpy==2.3.3
+pandas==2.3.2
+scikit-learn==1.7.2  # Critical: must match training environment
+joblib==1.5.2
+
+# API (from Session 2)
+fastapi==0.128.0
+uvicorn[standard]==0.40.0
+
+# Validation (from Session 3)
+pydantic==2.12.5
+
+# NEW in Session 4: Configuration + Data formats
+pydantic-settings
+python-dotenv
+pyarrow==23.0.0

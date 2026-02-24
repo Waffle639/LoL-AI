@@ -78,6 +78,16 @@ Predicts match winner based on in-game statistics:
 pip install pandas numpy matplotlib seaborn scikit-learn torch
 ```
 
+**Train Models**
+```bash
+py -m app.train
+```
+
+**Start API**
+```bash
+uvicorn app.api:app --reload
+```
+
 **Open Notebooks**
 ```bash
 # Pre-game prediction (Random Forest)
