@@ -37,7 +37,7 @@ desktop.ini
 data/
 *.csv
 .parquet
-.db
+*.db
 
 
 
