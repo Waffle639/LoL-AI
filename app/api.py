@@ -16,12 +16,13 @@ import logging
 import stripe
 import os
 
-from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
-from app.database import get_db, APIKey
-from app.auth import get_api_key
+from app.database import get_db
+from app.auth import verify_api_key
 
 from app.config import settings, setup_logging
+from app.routers import predict
 from app.train import LoLNeuralNetWrapper
 from app.database import create_tables
 
@@ -29,22 +30,16 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
 from app.schemas import *
-from app import webhooks, predict
+from app import webhooks
 
-import hashlib
-
-# Setup logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# Configurar Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
-# Models globals
 _model         = None
 _neural_net    = None
 _model_version = None
-
 
 def load_model():
     global _model, _neural_net, _model_version
@@ -107,15 +102,11 @@ def root():
     }
     
 @app.get("/billing/credits")
-def get_credits(api_key: str = Depends(get_api_key), db: Session = Depends(get_db)):
-    hashed  = hashlib.sha256(api_key.encode()).hexdigest()
-    key_obj = db.query(APIKey).filter(APIKey.key == hashed).first()
-    if not key_obj:
-        raise HTTPException(status_code=401, detail="API Key inválida")
-    
+def get_credits(api_key: str = Depends(verify_api_key), db: Session = Depends(get_db)):
+
     return {
-        "name": key_obj.name,
-        "credits_remaining": key_obj.credits,
+        "name": api_key.name,
+        "credits_remaining": api_key.credits,
     }
 
 
