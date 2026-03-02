@@ -2,9 +2,8 @@
 HTML templates profesionales para el billing de LoL AI API.
 """
 
-# Official Riot Games / LoL logo from their CDN
-LOGO_URL = "https://raw.githubusercontent.com/nicehash/NiceHashQuickMiner/master/LoL_logo.png"
-# Fallback: inline SVG crest-style LoL logo embedded directly in HTML
+# Logo local servido desde /assets/
+LOGO_URL = "/assets/lolesports.png"
 
 
 def _html_success(api_key: str, credits: int) -> str:
@@ -97,17 +96,10 @@ def _html_success(api_key: str, credits: int) -> str:
 
         /* Inline SVG crest — official LoL style */
         .brand-crest {{
-            width: 64px;
-            height: 64px;
-        }}
-
-        .brand-name {{
-            font-family: 'Cinzel', serif;
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 4px;
-            color: var(--gold);
-            text-transform: uppercase;
+            max-width: 200px;
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 0 8px rgba(200, 169, 110, 0.35));
         }}
 
         /* ─── Card ──────────────────────────────────── */
@@ -446,26 +438,7 @@ def _html_success(api_key: str, credits: int) -> str:
 
         <!-- Brand -->
         <div class="brand">
-            <!-- Inline LoL-style crest SVG -->
-            <svg class="brand-crest" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <!-- Shield base -->
-                <path d="M32 4 L56 14 L56 36 C56 50 44 60 32 62 C20 60 8 50 8 36 L8 14 Z"
-                      fill="#0D1525" stroke="#C8A96E" stroke-width="1.5"/>
-                <!-- Inner shield -->
-                <path d="M32 10 L50 18 L50 36 C50 47 42 55 32 57 C22 55 14 47 14 36 L14 18 Z"
-                      fill="none" stroke="#7A5C2E" stroke-width="0.75"/>
-                <!-- Center ornament — crossed swords -->
-                <line x1="24" y1="40" x2="40" y2="24" stroke="#C8A96E" stroke-width="1.5" stroke-linecap="round"/>
-                <line x1="40" y1="40" x2="24" y2="24" stroke="#C8A96E" stroke-width="1.5" stroke-linecap="round"/>
-                <!-- Sword hilts -->
-                <line x1="22" y1="22" x2="26" y2="22" stroke="#F0D898" stroke-width="1.2" stroke-linecap="round"/>
-                <line x1="38" y1="22" x2="42" y2="22" stroke="#F0D898" stroke-width="1.2" stroke-linecap="round"/>
-                <line x1="22" y1="42" x2="26" y2="42" stroke="#F0D898" stroke-width="1.2" stroke-linecap="round"/>
-                <line x1="38" y1="42" x2="42" y2="42" stroke="#F0D898" stroke-width="1.2" stroke-linecap="round"/>
-                <!-- Shield top gem -->
-                <polygon points="32,13 34,17 32,19 30,17" fill="#C8A96E" opacity="0.8"/>
-            </svg>
-            <span class="brand-name">LoL AI API</span>
+            <img class="brand-crest" src="{LOGO_URL}" alt="LoL Esports">
         </div>
 
         <!-- Card -->
@@ -666,16 +639,7 @@ def _html_error(message: str) -> str:
             margin-bottom: 28px;
         }}
 
-        .brand-crest {{ width: 64px; height: 64px; }}
-
-        .brand-name {{
-            font-family: 'Cinzel', serif;
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 4px;
-            color: var(--gold);
-            text-transform: uppercase;
-        }}
+        .brand-crest {{ max-width: 200px; width: 100%; height: auto; filter: drop-shadow(0 0 8px rgba(200, 64, 64, 0.35)); }}
 
         .card {{
             background: var(--surface);
@@ -774,20 +738,7 @@ def _html_error(message: str) -> str:
     <div class="page">
 
         <div class="brand">
-            <svg class="brand-crest" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M32 4 L56 14 L56 36 C56 50 44 60 32 62 C20 60 8 50 8 36 L8 14 Z"
-                      fill="#0D1525" stroke="#7A2020" stroke-width="1.5"/>
-                <path d="M32 10 L50 18 L50 36 C50 47 42 55 32 57 C22 55 14 47 14 36 L14 18 Z"
-                      fill="none" stroke="#4A1515" stroke-width="0.75"/>
-                <line x1="24" y1="40" x2="40" y2="24" stroke="#C84040" stroke-width="1.5" stroke-linecap="round"/>
-                <line x1="40" y1="40" x2="24" y2="24" stroke="#C84040" stroke-width="1.5" stroke-linecap="round"/>
-                <line x1="22" y1="22" x2="26" y2="22" stroke="#E86060" stroke-width="1.2" stroke-linecap="round"/>
-                <line x1="38" y1="22" x2="42" y2="22" stroke="#E86060" stroke-width="1.2" stroke-linecap="round"/>
-                <line x1="22" y1="42" x2="26" y2="42" stroke="#E86060" stroke-width="1.2" stroke-linecap="round"/>
-                <line x1="38" y1="42" x2="42" y2="42" stroke="#E86060" stroke-width="1.2" stroke-linecap="round"/>
-                <polygon points="32,13 34,17 32,19 30,17" fill="#C84040" opacity="0.8"/>
-            </svg>
-            <span class="brand-name">LoL AI API</span>
+            <img class="brand-crest" src="{LOGO_URL}" alt="LoL Esports">
         </div>
 
         <div class="card">
@@ -890,16 +841,7 @@ def _html_cancel() -> str:
             margin-bottom: 28px;
         }}
 
-        .brand-crest {{ width: 64px; height: 64px; opacity: 0.6; }}
-
-        .brand-name {{
-            font-family: 'Cinzel', serif;
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 4px;
-            color: var(--gold);
-            text-transform: uppercase;
-        }}
+        .brand-crest {{ max-width: 200px; width: 100%; height: auto; filter: drop-shadow(0 0 8px rgba(200, 169, 110, 0.3)); opacity: 0.85; }}
 
         .card {{
             background: var(--surface);
@@ -1000,20 +942,7 @@ def _html_cancel() -> str:
     <div class="page">
 
         <div class="brand">
-            <svg class="brand-crest" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M32 4 L56 14 L56 36 C56 50 44 60 32 62 C20 60 8 50 8 36 L8 14 Z"
-                      fill="#0D1525" stroke="#C8A96E" stroke-width="1.5"/>
-                <path d="M32 10 L50 18 L50 36 C50 47 42 55 32 57 C22 55 14 47 14 36 L14 18 Z"
-                      fill="none" stroke="#7A5C2E" stroke-width="0.75"/>
-                <line x1="24" y1="40" x2="40" y2="24" stroke="#C8A96E" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
-                <line x1="40" y1="40" x2="24" y2="24" stroke="#C8A96E" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
-                <line x1="22" y1="22" x2="26" y2="22" stroke="#F0D898" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
-                <line x1="38" y1="22" x2="42" y2="22" stroke="#F0D898" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
-                <line x1="22" y1="42" x2="26" y2="42" stroke="#F0D898" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
-                <line x1="38" y1="42" x2="42" y2="42" stroke="#F0D898" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
-                <polygon points="32,13 34,17 32,19 30,17" fill="#C8A96E" opacity="0.4"/>
-            </svg>
-            <span class="brand-name">LoL AI API</span>
+            <img class="brand-crest" src="{LOGO_URL}" alt="LoL Esports">
         </div>
 
         <div class="card">
@@ -1056,7 +985,7 @@ def html_register(error: str = None) -> str:
         .container{{position:relative;z-index:1;width:100%;max-width:520px;animation:fadeUp 0.5s ease both;}}
         @keyframes fadeUp{{from{{opacity:0;transform:translateY(20px);}}to{{opacity:1;transform:translateY(0);}}}}
         .header{{text-align:center;margin-bottom:28px;}}
-        .logo{{width:100px;margin-bottom:12px;filter:drop-shadow(0 0 16px rgba(11,196,227,0.3));}}
+        .logo{{width:200px;max-width:100%;height:auto;margin-bottom:12px;filter:drop-shadow(0 0 16px rgba(11,196,227,0.3));}}
         .header-tag{{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blue);letter-spacing:3px;text-transform:uppercase;}}
         .card-wrap{{position:relative;}}
         .corner{{position:absolute;width:12px;height:12px;border-color:var(--gold);border-style:solid;opacity:0.4;}}
@@ -1170,7 +1099,7 @@ def html_login(error: str = None) -> str:
         .container{{position:relative;z-index:1;width:100%;max-width:420px;animation:fadeUp 0.5s ease both;}}
         @keyframes fadeUp{{from{{opacity:0;transform:translateY(20px);}}to{{opacity:1;transform:translateY(0);}}}}
         .header{{text-align:center;margin-bottom:28px;}}
-        .logo{{width:100px;margin-bottom:12px;filter:drop-shadow(0 0 16px rgba(11,196,227,0.3));}}
+        .logo{{width:200px;max-width:100%;height:auto;margin-bottom:12px;filter:drop-shadow(0 0 16px rgba(11,196,227,0.3));}}
         .header-tag{{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blue);letter-spacing:3px;text-transform:uppercase;}}
         .card-wrap{{position:relative;}}
         .corner{{position:absolute;width:12px;height:12px;border-color:var(--gold);border-style:solid;opacity:0.4;}}
@@ -1272,7 +1201,7 @@ def html_dashboard(
         .container{{position:relative;z-index:1;width:100%;max-width:560px;animation:fadeUp 0.5s ease both;}}
         @keyframes fadeUp{{from{{opacity:0;transform:translateY(20px);}}to{{opacity:1;transform:translateY(0);}}}}
         .header{{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}}
-        .logo{{width:80px;filter:drop-shadow(0 0 12px rgba(11,196,227,0.3));}}
+        .logo{{width:160px;max-width:40%;height:auto;filter:drop-shadow(0 0 12px rgba(11,196,227,0.3));}}
         .logout-btn{{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text);text-decoration:none;letter-spacing:2px;border:1px solid var(--border);padding:8px 14px;border-radius:4px;transition:all 0.2s;}}
         .logout-btn:hover{{color:var(--blue);border-color:rgba(11,196,227,0.3);}}
         .card-wrap{{position:relative;}}

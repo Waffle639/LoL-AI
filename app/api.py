@@ -12,6 +12,7 @@ Endpoints:
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 from sqlalchemy.orm import Session
@@ -75,6 +76,11 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv("SECRET_KEY", "changeme-set-a-secret-in-env"),
 )
+
+# ==================== STATIC FILES ====================
+import pathlib
+_assets_dir = pathlib.Path(__file__).parent / "assets"
+app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="assets")
 
 # ==================== ROUTERS ====================
 app.include_router(predict.router)

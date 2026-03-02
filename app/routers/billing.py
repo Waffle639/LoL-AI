@@ -12,14 +12,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from app.core.database import get_db, APIKey, CreditTransaction, User, PendingRegistration
-from app.auth import get_api_key
+from app.auth import get_api_key, create_user_and_api_key, hash_key, hash_password
 from app.template.template import _html_success, _html_error, _html_cancel, html_register
 import stripe
 import os
 import secrets
-import hashlib
-import hmac
+import logging
+from datetime import datetime
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/billing", tags=["billing"])
 
 PACKS = {
@@ -42,16 +43,6 @@ PACKS = {
 }
 
 
-def hash_key(key: str) -> str:
-    return hashlib.sha256(key.encode()).hexdigest()
-
-
-def hash_password(password: str) -> str:
-    salt = os.urandom(16).hex()
-    key  = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 100_000).hex()
-    return f"{salt}:{key}"
-
-
 # ==================== REGISTRO ====================
 
 @router.get("/register", response_class=HTMLResponse)
@@ -71,7 +62,7 @@ async def register_submit(request: Request, db: Session = Depends(get_db)):
     """Valida el formulario, guarda el registro pendiente y redirige a Stripe."""
     form     = await request.form()
     username = form.get("username", "").strip()
-    email    = form.get("email", "").strip()
+    email    = form.get("email", "").strip().lower()
     password = form.get("password", "").strip()
     plan     = form.get("plan", "starter")
 
@@ -156,11 +147,41 @@ def success(session_id: str = Query(...), db: Session = Depends(get_db)):
         CreditTransaction.stripe_session_id == session_id
     ).first()
 
+    # Fallback: el webhook no ha llegado aún (habitual en local sin Stripe CLI activo)
     if not tx:
-        return HTMLResponse(_html_error(
-            "Tu pago se ha procesado pero la key aún se está generando. "
-            "Espera unos segundos y recarga la página."
-        ))
+        logger.info(f"Webhook todavía no procesado para {session_id}. Ejecutando fallback.")
+        try:
+            metadata   = dict(session.metadata or {})
+            plan       = metadata.get("plan", "starter")
+            credits    = int(metadata.get("credits", PACKS.get(plan, PACKS["starter"])["credits"]))
+            cd         = getattr(session, "customer_details", None)
+            email_fb   = (getattr(cd, "email", None) or (cd.get("email") if hasattr(cd, "get") else None) or "unknown") if cd else "unknown"
+            customer_id = getattr(session, "customer", None)
+
+            create_user_and_api_key(
+                db                = db,
+                pending_id        = metadata.get("pending_id"),
+                customer_id       = customer_id,
+                email_fallback    = email_fb,
+                plan              = plan,
+                credits           = credits,
+                stripe_session_id = session.id,
+            )
+        except Exception as exc:
+            import traceback
+            logger.error(f"Error en fallback /success: {exc}\n{traceback.format_exc()}")
+            return HTMLResponse(_html_error(
+                "Tu pago se ha procesado pero hubo un error generando la key. "
+                "Contacta soporte o espera unos segundos y recarga."
+            ))
+        tx = db.query(CreditTransaction).filter(
+            CreditTransaction.stripe_session_id == session_id
+        ).first()
+        if not tx:
+            return HTMLResponse(_html_error(
+                "Tu pago se ha procesado pero la key aún se está generando. "
+                "Espera unos segundos y recarga la página."
+            ))
 
     raw_key = tx.description if tx.description and tx.description.startswith("lol_") else None
 
@@ -170,11 +191,11 @@ def success(session_id: str = Query(...), db: Session = Depends(get_db)):
             "Accede a tu cuenta en <a href='/account/login' style='color:#0BC4E3'>/account/login</a> para ver tus créditos."
         ))
 
-    tx.description = f"{PACKS.get(session.metadata.get('plan', 'starter'), PACKS['starter'])['name']} — key mostrada"
-    db.commit()
-
-    plan    = session.metadata.get("plan", "starter")
+    plan    = session.metadata.get("plan", "starter") if session.metadata else "starter"
     credits = PACKS.get(plan, PACKS["starter"])["credits"]
+
+    tx.description = f"{PACKS.get(plan, PACKS['starter'])['name']} — key mostrada"
+    db.commit()
 
     return HTMLResponse(_html_success(raw_key, credits))
 

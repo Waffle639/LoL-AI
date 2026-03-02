@@ -11,27 +11,10 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from app.core.database import get_db, User, APIKey, CreditTransaction
+from app.auth import verify_password
 from app.template.template import html_login, html_dashboard
-import hashlib
-import hmac
 
 router = APIRouter(prefix="/account", tags=["account"])
-
-
-# ==================== UTILIDADES ====================
-
-def verify_password(plain: str, stored: str) -> bool:
-    """Verifica una contraseña contra su hash pbkdf2."""
-    if not stored or ":" not in stored:
-        return False
-    try:
-        salt, key = stored.split(":", 1)
-        new_key   = hashlib.pbkdf2_hmac(
-            "sha256", plain.encode(), bytes.fromhex(salt), 100_000
-        ).hex()
-        return hmac.compare_digest(key, new_key)
-    except Exception:
-        return False
 
 
 # ==================== LOGIN ====================
