@@ -5,7 +5,7 @@ POST /predict → Prediu el resultat d'una partida de LoL
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.database import get_db, APIKey
+from app.core.database import get_db, APIKey
 from app.auth import verify_api_key, consume_credit
 from app.schemas import LoLNeuralNetInput, PredictionResponse
 import pandas as pd

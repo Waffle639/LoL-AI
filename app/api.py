@@ -9,28 +9,28 @@ Endpoints:
     POST /webhooks/stripe       - Webhook de Stripe (ús intern)
 """
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
+from sqlalchemy.orm import Session
 import joblib
 import logging
 import stripe
 import os
 
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
-from app.database import get_db
+from dotenv import load_dotenv
+load_dotenv()
+
+from app.core.config import settings, setup_logging
+from app.core.database import get_db, create_tables
+from app.ml.train import LoLNeuralNetWrapper
 from app.auth import verify_api_key
-
-from app.config import settings, setup_logging
-from app.routers import predict
-from app.train import LoLNeuralNetWrapper
-from app.database import create_tables
-
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-
-from app.schemas import *
+from app.routers import predict, billing
+from app.routers import account
 from app import webhooks
+from app.schemas import *
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -71,9 +71,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SECRET_KEY", "changeme-set-a-secret-in-env"),
+)
+
 # ==================== ROUTERS ====================
 app.include_router(predict.router)
 app.include_router(webhooks.router)
+app.include_router(billing.router)
+app.include_router(account.router)
 
 
 # ==================== ENDPOINTS BASE ====================

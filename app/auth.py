@@ -7,7 +7,7 @@ import hashlib
 
 from fastapi import Header, HTTPException, Depends
 from sqlalchemy.orm import Session
-from app.database import get_db, APIKey, CreditTransaction
+from app.core.database import get_db, APIKey, CreditTransaction
 from datetime import datetime
 
 

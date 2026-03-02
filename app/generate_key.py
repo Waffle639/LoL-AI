@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from dotenv import load_dotenv
 load_dotenv()
 
-from app.database import SessionLocal, APIKey, CreditTransaction, create_tables
+from app.core.database import SessionLocal, APIKey, CreditTransaction, create_tables
 from datetime import datetime
 
 import hashlib

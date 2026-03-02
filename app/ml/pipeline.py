@@ -11,7 +11,7 @@ import sys
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-from app.config import setup_logging
+from app.core.config import setup_logging
 
 logger = logging.getLogger(__name__)
 
