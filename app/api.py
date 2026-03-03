@@ -30,6 +30,7 @@ from app.ml.train import LoLNeuralNetWrapper
 from app.auth import verify_api_key
 from app.routers import predict, billing
 from app.routers import account
+from app.routers import predict_pregame
 from app import webhooks
 from app.schemas import *
 
@@ -38,17 +39,26 @@ logger = logging.getLogger(__name__)
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
-_model         = None
-_neural_net    = None
-_model_version = None
+_model              = None
+_neural_net         = None
+_pregame_artifacts  = None
+_model_version      = None
 
 def load_model():
-    global _model, _neural_net, _model_version
+    global _model, _neural_net, _pregame_artifacts, _model_version
 
     sgd_artifacts = joblib.load(str(settings.resolve_path(settings.MODEL_PATH)))
     _model        = sgd_artifacts['model']
 
     _neural_net   = LoLNeuralNetWrapper(str(settings.resolve_path(settings.NN_MODEL_PATH)))
+
+    pregame_path = str(settings.resolve_path('models/pregame_rf.pkl'))
+    try:
+        _pregame_artifacts = joblib.load(pregame_path)
+        logger.info("RandomForest Pre-Game carregat")
+    except FileNotFoundError:
+        _pregame_artifacts = None
+        logger.warning(f"Model pre-game no trobat a {pregame_path}. Executa train.py per entrenar-lo.")
 
     _model_version = settings.APP_VERSION
     logger.info("SGDClassifier i Neural Network carregats")
@@ -84,6 +94,7 @@ app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="assets")
 
 # ==================== ROUTERS ====================
 app.include_router(predict.router)
+app.include_router(predict_pregame.router)
 app.include_router(webhooks.router)
 app.include_router(billing.router)
 app.include_router(account.router)
@@ -97,6 +108,7 @@ def health_check():
         "status": "healthy",
         "model_loaded": _model is not None,
         "neural_net_loaded": _neural_net is not None,
+        "pregame_model_loaded": _pregame_artifacts is not None,
         "model_version": _model_version
     }
 

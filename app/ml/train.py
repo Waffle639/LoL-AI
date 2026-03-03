@@ -14,6 +14,7 @@ from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.linear_model import SGDClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 import joblib
 
@@ -55,6 +56,12 @@ NN_NUMERIC_FEATURES = [
     'kills', 'deaths', 'assists', 'teamkills', 'teamdeaths',
     'dragons', 'opp_dragons', 'elders', 'opp_elders',
     'barons', 'opp_barons', 'towers', 'opp_towers', 'totalgold',
+]
+
+# Features used by the Pre-Game RandomForest (IA_LoL_Prediccion_Pre_Game.ipynb)
+PRE_GAME_FEATURES = [
+    'team_encoded', 'player_encoded', 'champion_encoded', 'side_encoded', 'position_encoded',
+    'team_winrate', 'player_winrate', 'player_kda', 'champion_winrate', 'player_champ_winrate',
 ]
 
 # Neural network hyperparameters (from IA_LoL_NeuralNetwork.ipynb)
@@ -336,12 +343,112 @@ def train_neural_network(output_path: str = 'models/neural_net.pth'):
 
 
 # ---------------------------------------------------------------------------
+# 3. Train Pre-Game RandomForest  (IA_LoL_Prediccion_Pre_Game.ipynb)
+# ---------------------------------------------------------------------------
+
+def train_pregame_rf(output_path: str = 'models/pregame_rf.pkl'):
+    print("\n" + "="*60)
+    print("MODEL 3: RandomForest Pre-Game  (IA_LoL_Prediccion_Pre_Game.ipynb)")
+    print("="*60)
+
+    # --- Load & select columns ---
+    df = load_csv()
+    training_columns = [
+        'gameid', 'teamname', 'playername', 'position', 'champion', 'side', 'result'
+    ]
+    df_clean = df[training_columns].copy().fillna(0)
+    df_clean['playername'] = df_clean['playername'].astype(str)
+    df_clean['champion']   = df_clean['champion'].astype(str)
+
+    # --- Historical stats (lookup tables saved with model for inference) ---
+    team_stats = df_clean.groupby('teamname')['result'].mean().reset_index()
+    team_stats.columns = ['teamname', 'team_winrate']
+
+    kda_base = df[['playername', 'kills', 'deaths', 'assists', 'result']].copy().fillna(0)
+    player_kda_stats = kda_base.groupby('playername').agg(
+        player_winrate=('result', 'mean'),
+        player_avg_kills=('kills', 'mean'),
+        player_avg_deaths=('deaths', 'mean'),
+        player_avg_assists=('assists', 'mean'),
+    ).reset_index()
+    player_kda_stats['player_kda'] = (
+        (player_kda_stats['player_avg_kills'] + player_kda_stats['player_avg_assists'])
+        / (player_kda_stats['player_avg_deaths'] + 1)
+    )
+
+    champion_stats = df_clean.groupby('champion')['result'].mean().reset_index()
+    champion_stats.columns = ['champion', 'champion_winrate']
+
+    player_champ_stats = df_clean.groupby(['playername', 'champion'])['result'].mean().reset_index()
+    player_champ_stats.columns = ['playername', 'champion', 'player_champ_winrate']
+
+    # --- Merge historical features ---
+    df_features = (
+        df_clean
+        .merge(team_stats, on='teamname', how='left')
+        .merge(player_kda_stats[['playername', 'player_winrate', 'player_kda']], on='playername', how='left')
+        .merge(champion_stats, on='champion', how='left')
+        .merge(player_champ_stats, on=['playername', 'champion'], how='left')
+        .fillna(0.5)
+    )
+
+    # --- Encode categoricals ---
+    le_team     = LabelEncoder()
+    le_player   = LabelEncoder()
+    le_champion = LabelEncoder()
+    le_side     = LabelEncoder()
+    le_position = LabelEncoder()
+
+    df_features['team_encoded']     = le_team.fit_transform(df_clean['teamname'])
+    df_features['player_encoded']   = le_player.fit_transform(df_clean['playername'])
+    df_features['champion_encoded'] = le_champion.fit_transform(df_clean['champion'])
+    df_features['side_encoded']     = le_side.fit_transform(df_clean['side'])
+    df_features['position_encoded'] = le_position.fit_transform(df_clean['position'])
+
+    print(f"Features: {len(PRE_GAME_FEATURES)}  |  Samples: {len(df_features)}")
+
+    X = df_features[PRE_GAME_FEATURES]
+    y = df_features['result'].values
+
+    # --- Split 80/20 ---
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+
+    # --- Train RandomForest (same hyperparams as notebook) ---
+    model = RandomForestClassifier(n_estimators=200, max_depth=15, random_state=42, n_jobs=-1)
+    model.fit(X_train, y_train)
+
+    train_acc = accuracy_score(y_train, model.predict(X_train))
+    test_acc  = accuracy_score(y_test,  model.predict(X_test))
+    print(f"Train accuracy: {train_acc:.2%}")
+    print(f"Test  accuracy: {test_acc:.2%}")
+
+    # --- Save model + encoders + lookup tables ---
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump({
+        'model': model,
+        'feature_names': PRE_GAME_FEATURES,
+        'encoders': {
+            'team': le_team, 'player': le_player, 'champion': le_champion,
+            'side': le_side, 'position': le_position,
+        },
+        'team_stats':         team_stats,
+        'player_stats':       player_kda_stats[['playername', 'player_winrate', 'player_kda']],
+        'champion_stats':     champion_stats,
+        'player_champ_stats': player_champ_stats,
+    }, output_path)
+    print(f"Model guardat a: {output_path}")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 if __name__ == '__main__':
     train_sgd()
     train_neural_network()
+    train_pregame_rf()
     print("\n" + "="*60)
     print("ENTRENAMENT COMPLETAT")
     print("="*60)

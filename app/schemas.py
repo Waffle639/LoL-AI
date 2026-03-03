@@ -6,7 +6,7 @@ Dataset: 2024_LoL_esports_match_data_from_OraclesElixir1.csv
 """
 
 from pydantic import BaseModel, Field
-from typing import Literal, Optional
+from typing import Literal, Optional, List
 
 
 # ---------------------------------------------------------------------------
@@ -124,6 +124,7 @@ class HealthResponse(BaseModel):
     status: str = Field(..., description="Estat del servei: 'healthy' o 'unhealthy'")
     model_loaded: bool = Field(..., description="Si el model SGD està carregat")
     neural_net_loaded: bool = Field(..., description="Si la xarxa neuronal PyTorch està carregada")
+    pregame_model_loaded: bool = Field(False, description="Si el RandomForest pre-game està carregat")
     model_version: Optional[str] = Field(None, description="Versió del model carregat")
 
 
@@ -132,3 +133,96 @@ class ErrorResponse(BaseModel):
 
     error: str = Field(..., description="Tipus d'error")
     detail: str = Field(..., description="Detalls de l'error")
+
+
+# ---------------------------------------------------------------------------
+# Pre-Game prediction schemas
+# ---------------------------------------------------------------------------
+
+class PreGamePlayerInput(BaseModel):
+    """Un jugador amb el seu campió i posició per a predicció pre-game."""
+
+    player: str = Field(..., description="Nom del jugador (ex: 'Caps')")
+    champion: str = Field(..., description="Nom del campió (ex: 'Azir')")
+    position: Literal['top', 'jng', 'mid', 'bot', 'sup'] = Field(
+        ..., description="Posició: top / jng / mid / bot / sup"
+    )
+
+
+class PreGameTeamInput(BaseModel):
+    """Un equip de 5 jugadors per a predicció pre-game."""
+
+    team_name: str = Field(..., description="Nom de l'equip (ex: 'G2 Esports')")
+    side: Literal['Blue', 'Red'] = Field(..., description="Costat: Blue o Red")
+    players: List[PreGamePlayerInput] = Field(
+        ..., min_length=5, max_length=5,
+        description="Exactament 5 jugadors"
+    )
+
+
+class PreGameMatchInput(BaseModel):
+    """Request per a la predicció pre-game d'un enfrontament entre dos equips."""
+
+    team1: PreGameTeamInput
+    team2: PreGameTeamInput
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{
+                "team1": {
+                    "team_name": "G2 Esports",
+                    "side": "Blue",
+                    "players": [
+                        {"player": "BrokenBlade", "champion": "K'Sante",  "position": "top"},
+                        {"player": "Yike",        "champion": "Vi",        "position": "jng"},
+                        {"player": "Caps",        "champion": "Azir",      "position": "mid"},
+                        {"player": "Hans Sama",   "champion": "Varus",     "position": "bot"},
+                        {"player": "Mikyx",       "champion": "Zyra",      "position": "sup"}
+                    ]
+                },
+                "team2": {
+                    "team_name": "MAD Lions KOI",
+                    "side": "Red",
+                    "players": [
+                        {"player": "Myrwn",      "champion": "Gwen",         "position": "top"},
+                        {"player": "Elyoya",     "champion": "Viego",        "position": "jng"},
+                        {"player": "Fresskowy",  "champion": "Neeko",        "position": "mid"},
+                        {"player": "Supa",       "champion": "Ashe",         "position": "bot"},
+                        {"player": "Alvaro",     "champion": "Renata Glasc", "position": "sup"}
+                    ]
+                }
+            }]
+        }
+    }
+
+
+class PreGamePlayerResult(BaseModel):
+    """Resultat de la predicció pre-game per a un jugador individual."""
+
+    player: str
+    champion: str
+    position: str
+    victory_prob: float = Field(..., description="Probabilitat de victòria individual (0-1)")
+    team_winrate: float
+    player_winrate: float
+    player_kda: float
+    champion_winrate: float
+    player_champ_winrate: float
+
+
+class PreGameTeamResult(BaseModel):
+    """Resultat de la predicció pre-game per a un equip complet."""
+
+    team_name: str
+    side: str
+    victory_prob: float = Field(..., description="Probabilitat de victòria de l'equip normalitzada (0-100)")
+
+
+class PreGameMatchResponse(BaseModel):
+    """Response de la predicció pre-game d'un enfrontament complet."""
+
+    team1: PreGameTeamResult
+    team2: PreGameTeamResult
+    predicted_winner: str = Field(..., description="Nom de l'equip que es prediu guanyador")
+    confidence: float = Field(..., description="Probabilitat del guanyador (0-100)")
+    model_version: str
