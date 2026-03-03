@@ -40,9 +40,10 @@ The ML backend combines three models trained on 12,000+ rows of professional pla
 </div>
 
 <br/>
+<div align="center">
 
 | Layer | Technology |
-|---|---|
+|:---|:---|
 | **API Framework** | FastAPI + Uvicorn |
 | **ML Models** | scikit-learn (RandomForest, SGD), PyTorch |
 | **Data** | pandas, NumPy |
@@ -52,8 +53,9 @@ The ML backend combines three models trained on 12,000+ rows of professional pla
 | **Billing** | Stripe Checkout + Webhooks |
 | **Environment** | Python 3.13+, Jupyter Notebooks |
 
----
+</div>
 
+---
 ## Dataset
 
 - **Source**: [League of Legends 2024 Competitive Game Dataset — Kaggle](https://www.kaggle.com/datasets/barthetur/league-of-legends-2024-competitive-game-dataset)
@@ -71,25 +73,12 @@ Each row represents one player's performance in one game, containing pre-game me
 ### Authentication — `POST /account/register` · `POST /account/login`
 
 Create an account or log in to retrieve your API key. All prediction and billing endpoints require the key in the `X-API-Key` header.
-```http
-POST /account/register
-Content-Type: application/json
 
-{
-  "username": "yourname",
-  "password": "yourpassword"
-}
-```
-```json
-{
-  "message": "Account created",
-  "api_key": "lol_xxxxxxxxxxxxxxxxxxxx",
-  "credits": 20
-}
-```
+<div align="center">
+  <img width="600" alt="Register and Login UI" src="https://github.com/user-attachments/assets/06b54187-152f-4e12-b69a-0e1a5415f445" />
+</div>
 
 ---
-
 ### Prediction — `POST /predict`
 
 Send a full player/team snapshot and receive a win probability. Each successful call consumes 1 credit.
@@ -145,7 +134,6 @@ X-API-Key: lol_xxxxxxxxxxxx
 ```
 
 ---
-
 ### Top-Up — `GET /billing/checkout`
 
 Redirects to a Stripe Checkout session to purchase additional credit bundles. On payment success, a webhook automatically credits the account.
@@ -160,17 +148,18 @@ X-API-Key: lol_xxxxxxxxxxxx
 ```
 
 ---
-
 ### Payment Success — `GET /success`
 
 Landing page shown after completed Stripe payment confirming credits have been added.
 
----
+<div align="center">
+  <img width="500" alt="Payment success page" src="https://github.com/user-attachments/assets/f597886a-4e1c-4ca9-8126-e2108563656e" />
+</div>
 
+---
 ## Quick Start
 ```bash
-# Install dependencies
-pip install pandas numpy matplotlib seaborn scikit-learn torch fastapi uvicorn stripe
+pip install -r requirements.txt
 
 # Train models
 py -m app.train
@@ -207,8 +196,3 @@ The three Jupyter notebooks document the full ML experimentation behind the API 
 | `IA_LoL_Prediccion_Pre_Game.ipynb` | RandomForestClassifier | Pre-game prediction using team winrates, player KDA, champion mastery. 200 trees, max_depth 15. |
 | `IA_LoL_NeuralNetwork.ipynb` | PyTorch Neural Network | Pre-game via deep learning. Architecture 24→64→32→1, dropout 0.2, Adam optimizer. |
 | `IA_LoL.ipynb` | SGDClassifier | In-game prediction from live stats: kills, gold, objectives, towers. 70/30 split. |
-```bash
-jupyter notebook IA_LoL_Prediccion_Pre_Game.ipynb
-jupyter notebook IA_LoL_NeuralNetwork.ipynb
-jupyter notebook IA_LoL.ipynb
-```
