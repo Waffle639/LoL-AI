@@ -1,0 +1,7 @@
+deployment_criteria:
+  min_precision: 0.75    # At least 75% of positive predictions correct
+  min_recall: 0.70       # Catch at least 70% of actual disease cases
+  min_f1_score: 0.72     # Balance between precision and recall
+  min_roc_auc: 0.80      # Good discrimination ability
+  max_false_positive_rate: 0.25  # No more than 25% false positives
+  max_false_negative_rate: 0.30  # No more than 30% false

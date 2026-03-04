@@ -14,9 +14,18 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 class Settings(BaseSettings):
     """Configuració de l'aplicació carregada des de .env."""
 
+    # Paths
+    CSV_PATH: str 
+    MODEL_DIR: str 
+    METADATA_DIR: str 
+    DEPLOYMENT_CRITERIA: str 
+
     # Model - MUST be set in .env (no hardcoded default)
-    MODEL_PATH: str
     NN_MODEL_PATH: str
+    NN_METADATA_PATH: str
+
+    PREGAME_MODEL_PATH: str
+    PREGAME_METADATA_PATH: str
 
     # API
     PORT: int = 8000

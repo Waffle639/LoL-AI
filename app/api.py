@@ -39,20 +39,17 @@ logger = logging.getLogger(__name__)
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
-_model              = None
 _neural_net         = None
 _pregame_artifacts  = None
 _model_version      = None
 
 def load_model():
-    global _model, _neural_net, _pregame_artifacts, _model_version
+    global _neural_net, _pregame_artifacts, _model_version
 
-    sgd_artifacts = joblib.load(str(settings.resolve_path(settings.MODEL_PATH)))
-    _model        = sgd_artifacts['model']
+    _neural_net = LoLNeuralNetWrapper(str(settings.resolve_path(settings.NN_MODEL_PATH)))
+    logger.info("Neural Network carregada")
 
-    _neural_net   = LoLNeuralNetWrapper(str(settings.resolve_path(settings.NN_MODEL_PATH)))
-
-    pregame_path = str(settings.resolve_path('models/pregame_rf.pkl'))
+    pregame_path = str(settings.resolve_path(settings.PREGAME_MODEL_PATH))
     try:
         _pregame_artifacts = joblib.load(pregame_path)
         logger.info("RandomForest Pre-Game carregat")
@@ -61,7 +58,6 @@ def load_model():
         logger.warning(f"Model pre-game no trobat a {pregame_path}. Executa train.py per entrenar-lo.")
 
     _model_version = settings.APP_VERSION
-    logger.info("SGDClassifier i Neural Network carregats")
 
 
 @asynccontextmanager
@@ -106,7 +102,6 @@ app.include_router(account.router)
 def health_check():
     return {
         "status": "healthy",
-        "model_loaded": _model is not None,
         "neural_net_loaded": _neural_net is not None,
         "pregame_model_loaded": _pregame_artifacts is not None,
         "model_version": _model_version

@@ -3,44 +3,48 @@
 Script d'entrenament - LoL Esports 2024 AI
 
 Entrena dos models basant-se en els notebooks:
-  1. SGDClassifier  (IA_LoL.ipynb)           → models/sgd_model.pkl
-  2. PyTorch Neural Network (IA_LoL_NeuralNetwork.ipynb) → models/neural_net.pth
+  1. SGDClassifier  (IA_LoL.ipynb)           → models/sgd_model_vN.pkl
+  2. PyTorch Neural Network (IA_LoL_NeuralNetwork.ipynb) → models/neural_net_vN.pth
+
+Versioning automàtic, avaluació completa i quality gate via deployment_criteria.yaml.
+Metadades guardades a metadata/metadata_vN.json i metadata/nn_metadata_vN.json.
 """
 
-import pandas as pd
-import numpy as np
+import json
+import logging
+from datetime import datetime
 from pathlib import Path
 
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.linear_model import SGDClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
 import joblib
+import numpy as np
+import pandas as pd
+import yaml
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import (
+    accuracy_score, confusion_matrix, f1_score,
+    precision_score, recall_score, roc_auc_score,
+)
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.utils.data as data
 import torch.optim as optim
+import torch.utils.data as data
 
 
 # ---------------------------------------------------------------------------
-# Constants
+# Constants  (loaded from .env via Settings)
 # ---------------------------------------------------------------------------
 
-CSV_PATH = 'data/2024_LoL_esports_match_data_from_OraclesElixir1.csv'
+from app.core.config import get_settings as _get_settings
+_s = _get_settings()
 
-# Features used by the SGDClassifier (IA_LoL.ipynb)
-SGD_FEATURES = [
-    'kills', 'deaths', 'assists',
-    'teamkills', 'teamdeaths',
-    'dragons', 'opp_dragons',
-    'elders', 'opp_elders',
-    'barons', 'opp_barons',
-    'towers', 'opp_towers',
-    'totalgold',
-]
+CSV_PATH             = _s.CSV_PATH
+DEFAULT_MODEL_DIR    = _s.MODEL_DIR
+DEFAULT_METADATA_DIR = _s.METADATA_DIR
+DEFAULT_CRITERIA     = _s.DEPLOYMENT_CRITERIA
 
 # All features used by the Neural Network (IA_LoL_NeuralNetwork.ipynb)
 NN_FEATURES = [
@@ -100,8 +104,7 @@ class AI_LoL_NeuralNetwork(nn.Module):
 
 class LoLNeuralNetWrapper:
     """
-    Envuelve el modelo PyTorch + scaler + encoders en un objeto
-    que se usa exactamente igual que el SGDClassifier:
+    Envuelve el modelo PyTorch + scaler + encoders en un objeto sklearn-like:
         model.predict(X)       → array [0, 1, 1, 0]
         model.predict_proba(X) → array [0.82, 0.61, ...]
     """
@@ -131,6 +134,149 @@ class LoLNeuralNetWrapper:
 
 
 # ---------------------------------------------------------------------------
+# Versioning helpers
+# ---------------------------------------------------------------------------
+
+def get_next_version_nn(model_dir: str = DEFAULT_MODEL_DIR) -> str:
+    """Retorna la propera versió disponible per a la Neural Network (neural_net_vN.pth)."""
+    models = Path(model_dir)
+    models.mkdir(parents=True, exist_ok=True)
+    existing = []
+    for f in models.glob("neural_net_v*.pth"):
+        try:
+            existing.append(int(f.stem.split("_v")[1]))
+        except (ValueError, IndexError):
+            continue
+    return f"v{max(existing, default=0) + 1}"
+
+
+def get_next_version_pregame(model_dir: str = DEFAULT_MODEL_DIR) -> str:
+    """Retorna la propera versió disponible per al Pre-Game RandomForest (pregame_rf_vN.pkl)."""
+    models = Path(model_dir)
+    models.mkdir(parents=True, exist_ok=True)
+    existing = []
+    for f in models.glob("pregame_rf_v*.pkl"):
+        try:
+            existing.append(int(f.stem.split("_v")[1]))
+        except (ValueError, IndexError):
+            continue
+    return f"v{max(existing, default=0) + 1}"
+
+
+# ---------------------------------------------------------------------------
+# Evaluation
+# ---------------------------------------------------------------------------
+
+def evaluate_classification(y_true, y_pred, y_prob) -> dict:
+    """
+    Avaluació completa d'un classificador binari.
+
+    Returns:
+        dict amb accuracy, precision, recall, f1_score, roc_auc i confusion_matrix.
+    """
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+    total_neg = tn + fp
+    total_pos = fn + tp
+    return {
+        'accuracy':  float(accuracy_score(y_true, y_pred)),
+        'precision': float(precision_score(y_true, y_pred, zero_division=0)),
+        'recall':    float(recall_score(y_true, y_pred, zero_division=0)),
+        'f1_score':  float(f1_score(y_true, y_pred, zero_division=0)),
+        'roc_auc':   float(roc_auc_score(y_true, y_prob)),
+        'false_positive_rate': float(fp / total_neg) if total_neg > 0 else 0.0,
+        'false_negative_rate': float(fn / total_pos) if total_pos > 0 else 0.0,
+        'confusion_matrix': {
+            'true_negative':  int(tn), 'false_positive': int(fp),
+            'false_negative': int(fn), 'true_positive':  int(tp),
+        },
+    }
+
+
+def _log_metrics(metrics: dict) -> None:
+    logger = logging.getLogger(__name__)
+    logger.info(f"  Accuracy:  {metrics['accuracy']:.4f}")
+    logger.info(f"  Precision: {metrics['precision']:.4f}")
+    logger.info(f"  Recall:    {metrics['recall']:.4f}")
+    logger.info(f"  F1 Score:  {metrics['f1_score']:.4f}")
+    logger.info(f"  ROC-AUC:   {metrics['roc_auc']:.4f}")
+    cm = metrics['confusion_matrix']
+    logger.info(f"  Confusion: TN={cm['true_negative']} FP={cm['false_positive']} "
+                f"FN={cm['false_negative']} TP={cm['true_positive']}")
+
+
+# ---------------------------------------------------------------------------
+# Quality gate
+# ---------------------------------------------------------------------------
+
+def load_criteria(criteria_file: str = DEFAULT_CRITERIA) -> dict:
+    with open(criteria_file) as f:
+        return yaml.safe_load(f).get('deployment_criteria', {})
+
+
+def check_deployment_criteria(metrics: dict, criteria: dict) -> tuple[bool, list]:
+    """
+    Comprova si el model compleix els criteris de deployment_criteria.yaml.
+
+    Returns:
+        (deployment_ready, failed_checks)
+    """
+    logger = logging.getLogger(__name__)
+    failed = []
+
+    for name, threshold in criteria.items():
+        if name.startswith('min_'):
+            key = name[4:]
+            if key in metrics and metrics[key] < threshold:
+                failed.append(f"{key} {metrics[key]:.4f} < mínim {threshold}")
+        elif name.startswith('max_'):
+            key = name[4:]
+            if key in metrics and metrics[key] > threshold:
+                failed.append(f"{key} {metrics[key]:.4f} > màxim {threshold}")
+
+    if not failed:
+        logger.info("  ✓ Model compleix tots els criteris de desplegament")
+    else:
+        logger.warning("  ✗ Model NO compleix els criteris de desplegament:")
+        for reason in failed:
+            logger.warning(f"    - {reason}")
+
+    return len(failed) == 0, failed
+
+
+# ---------------------------------------------------------------------------
+# Metadata persistence
+# ---------------------------------------------------------------------------
+
+def save_metadata(version: str, model_type: str, metrics: dict,
+                  is_ready: bool, failed_checks: list,
+                  metadata_dir: str = DEFAULT_METADATA_DIR,
+                  filename_prefix: str = 'metadata') -> Path:
+    """
+    Guarda un fitxer JSON amb mètriques i el flag deployment_ready.
+
+    Produces: metadata/{filename_prefix}_{version}.json
+    """
+    logger = logging.getLogger(__name__)
+    out = Path(metadata_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    payload = {
+        'version':          version,
+        'timestamp':        datetime.now().isoformat(),
+        'model_type':       model_type,
+        'metrics':          metrics,
+        'deployment_ready': is_ready,
+        'failed_checks':    failed_checks,
+    }
+
+    meta_file = out / f"{filename_prefix}_{version}.json"
+    with open(meta_file, 'w') as f:
+        json.dump(payload, f, indent=2)
+    logger.info(f"  Metadades: {meta_file}")
+    return meta_file
+
+
+# ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
 
@@ -143,60 +289,24 @@ def load_csv() -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# 1. Train SGDClassifier  (IA_LoL.ipynb)
+# 1. Train PyTorch Neural Network  (IA_LoL_NeuralNetwork.ipynb)
 # ---------------------------------------------------------------------------
 
-def train_sgd(output_path: str = 'models/sgd_model.pkl'):
-    print("\n" + "="*60)
-    print("MODEL 1: SGDClassifier  (IA_LoL.ipynb)")
-    print("="*60)
+def train_neural_network(model_dir: str = DEFAULT_MODEL_DIR,
+                         metadata_dir: str = DEFAULT_METADATA_DIR,
+                         criteria_file: str = DEFAULT_CRITERIA) -> str:
+    """
+    Entrena la Neural Network PyTorch, l'avalua i guarda model + metadades versionades.
 
-    # Load & clean
-    df = load_csv()
-    df_clean = df[SGD_FEATURES + ['result']].fillna(0)
-    print(f"Features: {len(SGD_FEATURES)}  |  Samples: {len(df_clean)}")
+    Returns:
+        Versió entrenada (p. ex. 'v1').
+    """
+    logger = logging.getLogger(__name__)
+    version = get_next_version_nn(model_dir)
 
-    X = df_clean[SGD_FEATURES]
-    y = df_clean['result']
-
-    # Split 70/30 (igual que al notebook)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.3, random_state=42, stratify=y
-    )
-
-    # Scale
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled  = scaler.transform(X_test)
-
-    # Train (mateixos paràmetres que al notebook)
-    model = SGDClassifier(
-        loss='log_loss', penalty='l2', alpha=0.0001,
-        max_iter=1000, tol=0.001,
-        learning_rate='constant', eta0=0.001,
-        shuffle=True
-    )
-    model.fit(X_train_scaled, y_train)
-
-    train_acc = model.score(X_train_scaled, y_train)
-    test_acc  = model.score(X_test_scaled, y_test)
-    print(f"Train accuracy: {train_acc:.2%}")
-    print(f"Test  accuracy: {test_acc:.2%}")
-
-    # Save
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump({'model': model, 'scaler': scaler, 'feature_names': SGD_FEATURES}, output_path)
-    print(f"Model guardat a: {output_path}")
-
-
-# ---------------------------------------------------------------------------
-# 2. Train PyTorch Neural Network  (IA_LoL_NeuralNetwork.ipynb)
-# ---------------------------------------------------------------------------
-
-def train_neural_network(output_path: str = 'models/neural_net.pth'):
-    print("\n" + "="*60)
-    print("MODEL 2: PyTorch Neural Network  (IA_LoL_NeuralNetwork.ipynb)")
-    print("="*60)
+    print("\n" + "=" * 60)
+    print(f"MODEL 2: PyTorch Neural Network  (IA_LoL_NeuralNetwork.ipynb)  →  {version}")
+    print("=" * 60)
 
     # --- Load & select columns ---
     df = load_csv()
@@ -317,18 +427,32 @@ def train_neural_network(output_path: str = 'models/neural_net.pth'):
 
     # --- Evaluate ---
     model.eval()
-    y_preds, y_trues = [], []
+    y_preds_raw, y_probs_raw, y_trues_raw = [], [], []
     with torch.no_grad():
         for batch_x, batch_y in test_loader:
-            preds = (model(batch_x) > 0.5).float()
-            y_preds.extend(preds.cpu().numpy())
-            y_trues.extend(batch_y.cpu().numpy())
+            prob  = model(batch_x).cpu().numpy().flatten()
+            pred  = (prob > 0.5).astype(int)
+            y_probs_raw.extend(prob.tolist())
+            y_preds_raw.extend(pred.tolist())
+            y_trues_raw.extend(batch_y.cpu().numpy().flatten().astype(int).tolist())
 
-    test_acc = accuracy_score(np.array(y_trues), np.array(y_preds))
-    print(f"\nTest accuracy: {test_acc:.2%}")
+    y_trues_np = np.array(y_trues_raw)
+    y_preds_np = np.array(y_preds_raw)
+    y_probs_np = np.array(y_probs_raw)
 
-    # --- Save ---
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    metrics = evaluate_classification(y_trues_np, y_preds_np, y_probs_np)
+    _log_metrics(metrics)
+    print(f"\nTest accuracy: {metrics['accuracy']:.2%}  |  F1: {metrics['f1_score']:.4f}  "
+          f"|  ROC-AUC: {metrics['roc_auc']:.4f}")
+
+    # Quality gate
+    logger.info("\n[Quality gate]")
+    criteria = load_criteria(criteria_file)
+    is_ready, failed = check_deployment_criteria(metrics, criteria)
+
+    # --- Save model ---
+    model_file = Path(model_dir) / f"neural_net_{version}.pth"
+    model_file.parent.mkdir(parents=True, exist_ok=True)
     torch.save({
         'model_state_dict': model.state_dict(),
         'input_size': len(NN_FEATURES),
@@ -338,18 +462,36 @@ def train_neural_network(output_path: str = 'models/neural_net.pth'):
             'team': le_team, 'player': le_player, 'champion': le_champion,
             'side': le_side, 'position': le_position
         }
-    }, output_path)
-    print(f"Model guardat a: {output_path}")
+    }, model_file)
+    logger.info(f"  Model: {model_file}")
+
+    # Save metadata
+    save_metadata(version, 'pytorch_neural_network', metrics, is_ready, failed,
+                  metadata_dir=metadata_dir, filename_prefix='nn_metadata')
+
+    print(f"deployment_ready={is_ready}")
+    return version
 
 
 # ---------------------------------------------------------------------------
 # 3. Train Pre-Game RandomForest  (IA_LoL_Prediccion_Pre_Game.ipynb)
 # ---------------------------------------------------------------------------
 
-def train_pregame_rf(output_path: str = 'models/pregame_rf.pkl'):
-    print("\n" + "="*60)
-    print("MODEL 3: RandomForest Pre-Game  (IA_LoL_Prediccion_Pre_Game.ipynb)")
-    print("="*60)
+def train_pregame_rf(model_dir: str = DEFAULT_MODEL_DIR,
+                     metadata_dir: str = DEFAULT_METADATA_DIR,
+                     criteria_file: str = DEFAULT_CRITERIA) -> str:
+    """
+    Entrena el Pre-Game RandomForest, l'avalua i guarda model + metadades versionades.
+
+    Returns:
+        Versió entrenada (p. ex. 'v1').
+    """
+    logger = logging.getLogger(__name__)
+    version = get_next_version_pregame(model_dir)
+
+    print("\n" + "=" * 60)
+    print(f"MODEL 3: RandomForest Pre-Game  (IA_LoL_Prediccion_Pre_Game.ipynb)  →  {version}")
+    print("=" * 60)
 
     # --- Load & select columns ---
     df = load_csv()
@@ -419,13 +561,20 @@ def train_pregame_rf(output_path: str = 'models/pregame_rf.pkl'):
     model = RandomForestClassifier(n_estimators=200, max_depth=15, random_state=42, n_jobs=-1)
     model.fit(X_train, y_train)
 
-    train_acc = accuracy_score(y_train, model.predict(X_train))
-    test_acc  = accuracy_score(y_test,  model.predict(X_test))
-    print(f"Train accuracy: {train_acc:.2%}")
-    print(f"Test  accuracy: {test_acc:.2%}")
+    # --- Evaluate ---
+    y_pred = model.predict(X_test)
+    y_prob = model.predict_proba(X_test)[:, 1]
+    metrics = evaluate_classification(y_test, y_pred, y_prob)
+    _log_metrics(metrics)
+
+    # Quality gate
+    logger.info("\n[Quality gate]")
+    criteria = load_criteria(criteria_file)
+    is_ready, failed = check_deployment_criteria(metrics, criteria)
 
     # --- Save model + encoders + lookup tables ---
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    model_file = Path(model_dir) / f"pregame_rf_{version}.pkl"
+    model_file.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({
         'model': model,
         'feature_names': PRE_GAME_FEATURES,
@@ -437,8 +586,17 @@ def train_pregame_rf(output_path: str = 'models/pregame_rf.pkl'):
         'player_stats':       player_kda_stats[['playername', 'player_winrate', 'player_kda']],
         'champion_stats':     champion_stats,
         'player_champ_stats': player_champ_stats,
-    }, output_path)
-    print(f"Model guardat a: {output_path}")
+    }, model_file)
+    logger.info(f"  Model: {model_file}")
+
+    # Save metadata
+    save_metadata(version, 'random_forest_pregame', metrics, is_ready, failed,
+                  metadata_dir=metadata_dir, filename_prefix='pregame_metadata')
+
+    print(f"Train accuracy: {accuracy_score(y_train, model.predict(X_train)):.2%}")
+    print(f"Test  accuracy: {metrics['accuracy']:.2%}  |  F1: {metrics['f1_score']:.4f}  "
+          f"|  ROC-AUC: {metrics['roc_auc']:.4f}  |  deployment_ready={is_ready}")
+    return version
 
 
 # ---------------------------------------------------------------------------
@@ -446,10 +604,17 @@ def train_pregame_rf(output_path: str = 'models/pregame_rf.pkl'):
 # ---------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    train_sgd()
-    train_neural_network()
-    train_pregame_rf()
-    print("\n" + "="*60)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+
+    nn_ver      = train_neural_network()
+    pregame_ver = train_pregame_rf()
+
+    print("\n" + "=" * 60)
     print("ENTRENAMENT COMPLETAT")
-    print("="*60)
+    print(f"  NN      → models/neural_net_{nn_ver}.pth      metadata/nn_metadata_{nn_ver}.json")
+    print(f"  Pregame → models/pregame_rf_{pregame_ver}.pkl metadata/pregame_metadata_{pregame_ver}.json")
+    print("=" * 60)
 

@@ -1,0 +1,22 @@
+{
+  "version": "v1",
+  "timestamp": "2026-03-04T20:06:07.701738",
+  "model_type": "pytorch_neural_network",
+  "metrics": {
+    "accuracy": 0.9743485342019544,
+    "precision": 0.9640062597809077,
+    "recall": 0.9863891112890312,
+    "f1_score": 0.9750692520775623,
+    "roc_auc": 0.9974972521513482,
+    "false_positive_rate": 0.03811101905550953,
+    "false_negative_rate": 0.013610888710968775,
+    "confusion_matrix": {
+      "true_negative": 1161,
+      "false_positive": 46,
+      "false_negative": 17,
+      "true_positive": 1232
+    }
+  },
+  "deployment_ready": true,
+  "failed_checks": []
+}
