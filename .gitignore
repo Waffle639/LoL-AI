@@ -49,3 +49,5 @@ data/
 .pth
 models/
 /models
+/data
+/metadata
