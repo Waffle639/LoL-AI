@@ -13,6 +13,8 @@
   <img src="https://img.shields.io/badge/PyTorch-2.x-orange?logo=pytorch&logoColor=white"/>
   <img src="https://img.shields.io/badge/Stripe-Billing-635BFF?logo=stripe&logoColor=white"/>
   <img src="https://img.shields.io/badge/SQLite-Database-003B57?logo=sqlite&logoColor=white"/>
+  <img src="https://img.shields.io/badge/DVC-Model%20Versioning-13ADC7?logo=dvc&logoColor=white"/>
+  <img src="https://img.shields.io/badge/DagsHub-Storage-FF6B6B"/>
 </div>
 
 ---
@@ -21,7 +23,9 @@
 
 This project exposes a production-ready API that allows any client to send a match snapshot — either pre-game or mid-game — and receive a win probability prediction in real time. It handles the full lifecycle: user registration, API key generation, prediction requests, and credit consumption tracked per call. Payments and credit top-ups are managed via Stripe Checkout.
 
-The ML backend combines three models trained on 12,000+ rows of professional play: a Random Forest for pre-game composition analysis, a PyTorch neural network for deep pre-game prediction, and an SGD classifier for live in-game state.
+The ML backend combines two models trained on 12,000+ rows of professional play: a **Random Forest** for pre-game composition analysis (picks, winrates, KDA) and a **PyTorch Neural Network** for live in-game state prediction (kills, gold, objectives).
+
+Models and datasets are versioned with **DVC** and stored in [DagsHub](https://dagshub.com/Waffle639/LoL-AI), keeping the Git repository lightweight.
 
 ---
 
@@ -37,6 +41,7 @@ The ML backend combines three models trained on 12,000+ rows of professional pla
   <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/fastapi/fastapi-original.svg" width="48" alt="FastAPI"/>
   <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/sqlite/sqlite-original.svg" width="48" alt="SQLite"/>
   <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/jupyter/jupyter-original.svg" width="48" alt="Jupyter"/>
+  <img src="https://cdn.simpleicons.org/dvc/13ADC7" width="48" alt="DVC"/>
 </div>
 
 <br/>
@@ -45,12 +50,13 @@ The ML backend combines three models trained on 12,000+ rows of professional pla
 | Layer | Technology |
 |:---|:---|
 | **API Framework** | FastAPI + Uvicorn |
-| **ML Models** | scikit-learn (RandomForest, SGD), PyTorch |
+| **ML Models** | scikit-learn (RandomForest), PyTorch Neural Network |
 | **Data** | pandas, NumPy |
 | **Visualization** | Matplotlib, Seaborn |
 | **Database** | SQLite — users, API keys, credit ledger |
 | **Auth** | Hashed API keys (bcrypt / SHA-256) |
 | **Billing** | Stripe Checkout + Webhooks |
+| **Model Versioning** | DVC + DagsHub |
 | **Environment** | Python 3.13+, Jupyter Notebooks |
 
 </div>
@@ -65,6 +71,24 @@ The ML backend combines three models trained on 12,000+ rows of professional pla
 - **Champions**: 147 different champions
 
 Each row represents one player's performance in one game, containing pre-game metadata (team, champion, side, position) and in-game outcomes (kills, gold, objectives, towers).
+
+---
+
+## Model & Data Storage
+
+Models and datasets are **not stored in Git**. They are versioned with [DVC](https://dvc.co) and stored in the companion [DagsHub repository](https://dagshub.com/Waffle639/LoL-AI).
+
+```bash
+# Download models and data after cloning
+dvc pull
+```
+
+| File | Tracked by |
+|---|---|
+| `models/neural_net_vN.pth` | DVC → DagsHub |
+| `models/pregame_rf_vN.pkl` | DVC → DagsHub |
+| `metadata/*.json` | DVC → DagsHub |
+| `data/*.csv` | DVC → DagsHub |
 
 ---
 
@@ -112,6 +136,51 @@ Content-Type: application/json
   "result_label": "Victory",
   "prediction": 1,
   "probability": 0.8732,
+  "model_version": "1.0.0",
+  "credits_remaining": 19
+}
+```
+
+---
+
+### Pre-Game Prediction — `POST /predict/pregame`
+
+Send only pre-game information (team, champion, player history) before the match starts and receive a win probability. Each successful call consumes 1 credit.
+```http
+POST /predict/pregame
+X-API-Key: lol_xxxxxxxxxxxx
+Content-Type: application/json
+
+{
+  "team1": {
+    "team_name": "G2 Esports",
+    "side": "Blue",
+    "players": [
+      {"player": "BrokenBlade", "champion": "K'Sante",  "position": "top"},
+      {"player": "Yike",        "champion": "Vi",        "position": "jng"},
+      {"player": "Caps",        "champion": "Azir",      "position": "mid"},
+      {"player": "Hans Sama",   "champion": "Varus",     "position": "bot"},
+      {"player": "Mikyx",       "champion": "Zyra",      "position": "sup"}
+    ]
+  },
+  "team2": {
+    "team_name": "MAD Lions KOI",
+    "side": "Red",
+    "players": [
+      {"player": "Myrwn",     "champion": "Gwen",         "position": "top"},
+      {"player": "Elyoya",    "champion": "Viego",        "position": "jng"},
+      {"player": "Fresskowy", "champion": "Neeko",        "position": "mid"},
+      {"player": "Supa",      "champion": "Ashe",         "position": "bot"},
+      {"player": "Alvaro",    "champion": "Renata Glasc", "position": "sup"}
+    ]
+  }
+}
+```
+```json
+{
+  "result_label": "Victory",
+  "prediction": 1,
+  "probability": 0.7782,
   "model_version": "1.0.0",
   "credits_remaining": 19
 }
@@ -194,5 +263,5 @@ The three Jupyter notebooks document the full ML experimentation behind the API 
 | Notebook | Model | Description |
 |---|---|---|
 | `IA_LoL_Prediccion_Pre_Game.ipynb` | RandomForestClassifier | Pre-game prediction using team winrates, player KDA, champion mastery. 200 trees, max_depth 15. |
-| `IA_LoL_NeuralNetwork.ipynb` | PyTorch Neural Network | Pre-game via deep learning. Architecture 24→64→32→1, dropout 0.2, Adam optimizer. |
-| `IA_LoL.ipynb` | SGDClassifier | In-game prediction from live stats: kills, gold, objectives, towers. 70/30 split. |
+| `IA_LoL_NeuralNetwork.ipynb` | PyTorch Neural Network | In-game prediction from live stats. Architecture 24→64→32→1, dropout 0.2, Adam optimizer. |
+| `IA_LoL.ipynb` | SGDClassifier | Early experimentation notebook (reference only, not used in production). |
