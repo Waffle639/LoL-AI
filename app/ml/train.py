@@ -12,6 +12,7 @@ Metadades guardades a metadata/metadata_vN.json i metadata/nn_metadata_vN.json.
 
 import json
 import logging
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -277,6 +278,96 @@ def save_metadata(version: str, model_type: str, metrics: dict,
 
 
 # ---------------------------------------------------------------------------
+# Deployment promotion & README update
+# ---------------------------------------------------------------------------
+
+def promote_model(model_file: Path, meta_file: Path, model_key: str) -> None:
+    """
+    Copia el model i metadades versionats als paths de producció definits al config.
+    S'executa quan deployment_ready=True.
+    """
+    logger = logging.getLogger(__name__)
+    s = _get_settings()
+
+    if model_key == 'nn':
+        prod_model = s.resolve_path(s.NN_MODEL_PATH)
+        prod_meta  = s.resolve_path(s.NN_METADATA_PATH)
+    else:
+        prod_model = s.resolve_path(s.PREGAME_MODEL_PATH)
+        prod_meta  = s.resolve_path(s.PREGAME_METADATA_PATH)
+
+    shutil.copy2(model_file, prod_model)
+    shutil.copy2(meta_file, prod_meta)
+    logger.info(f"  [PROMOTED] {model_file.name} → {prod_model.name}")
+    print(f"  ✓ Promoted to production: {prod_model.name}")
+
+
+def update_readme_metrics() -> None:
+    """
+    Llegeix els metadata de producció i actualitza la taula de mètriques del README.md.
+    Requereix els markers <!-- METRICS_START --> i <!-- METRICS_END --> al fitxer.
+    """
+    logger = logging.getLogger(__name__)
+    s = _get_settings()
+    readme = s.resolve_path("README.md")
+    if not readme.exists():
+        logger.warning("README.md no trobat, saltant actualització de mètriques")
+        return
+
+    nn_path     = s.resolve_path(s.NN_METADATA_PATH)
+    pregame_path = s.resolve_path(s.PREGAME_METADATA_PATH)
+
+    nn_meta = json.loads(nn_path.read_text(encoding='utf-8')) if nn_path.exists() else {}
+    pg_meta = json.loads(pregame_path.read_text(encoding='utf-8')) if pregame_path.exists() else {}
+
+    def fmt_pct(val):
+        return f"{val:.2%}" if isinstance(val, float) else "N/A"
+
+    def fmt_num(val):
+        return f"{val:.4f}" if isinstance(val, float) else "N/A"
+
+    nn_v  = nn_meta.get('version', 'N/A')
+    pg_v  = pg_meta.get('version', 'N/A')
+    nn_m  = nn_meta.get('metrics', {})
+    pg_m  = pg_meta.get('metrics', {})
+    nn_ok = "✅" if nn_meta.get('deployment_ready') else "❌"
+    pg_ok = "✅" if pg_meta.get('deployment_ready') else "❌"
+
+    table = (
+        f"| Metric | Neural Network ({nn_v}) | Pre-Game RF ({pg_v}) |\n"
+        f"|:---|:---:|:---:|\n"
+        f"| Accuracy | {fmt_pct(nn_m.get('accuracy', 'N/A'))} | {fmt_pct(pg_m.get('accuracy', 'N/A'))} |\n"
+        f"| F1 Score | {fmt_num(nn_m.get('f1_score', 'N/A'))} | {fmt_num(pg_m.get('f1_score', 'N/A'))} |\n"
+        f"| ROC-AUC | {fmt_num(nn_m.get('roc_auc', 'N/A'))} | {fmt_num(pg_m.get('roc_auc', 'N/A'))} |\n"
+        f"| Precision | {fmt_num(nn_m.get('precision', 'N/A'))} | {fmt_num(pg_m.get('precision', 'N/A'))} |\n"
+        f"| Recall | {fmt_num(nn_m.get('recall', 'N/A'))} | {fmt_num(pg_m.get('recall', 'N/A'))} |\n"
+        f"| Deployment Ready | {nn_ok} | {pg_ok} |\n"
+        f"\n*Last updated: {datetime.now().strftime('%Y-%m-%d')}*"
+    )
+
+    content = readme.read_text(encoding='utf-8')
+    start_marker = "<!-- METRICS_START -->"
+    end_marker   = "<!-- METRICS_END -->"
+    start_idx = content.find(start_marker)
+    end_idx   = content.find(end_marker)
+
+    if start_idx == -1 or end_idx == -1:
+        logger.warning("Markers METRICS_START/END no trobats al README.md")
+        return
+
+    new_content = (
+        content[:start_idx + len(start_marker)]
+        + "\n"
+        + table
+        + "\n"
+        + content[end_idx:]
+    )
+    readme.write_text(new_content, encoding='utf-8')
+    logger.info("  README.md mètriques actualitzades")
+    print("  ✓ README.md metrics updated")
+
+
+# ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
 
@@ -466,8 +557,11 @@ def train_neural_network(model_dir: str = DEFAULT_MODEL_DIR,
     logger.info(f"  Model: {model_file}")
 
     # Save metadata
-    save_metadata(version, 'pytorch_neural_network', metrics, is_ready, failed,
+    meta_file = save_metadata(version, 'pytorch_neural_network', metrics, is_ready, failed,
                   metadata_dir=metadata_dir, filename_prefix='nn_metadata')
+
+    if is_ready:
+        promote_model(model_file, meta_file, 'nn')
 
     print(f"deployment_ready={is_ready}")
     return version
@@ -590,8 +684,11 @@ def train_pregame_rf(model_dir: str = DEFAULT_MODEL_DIR,
     logger.info(f"  Model: {model_file}")
 
     # Save metadata
-    save_metadata(version, 'random_forest_pregame', metrics, is_ready, failed,
+    meta_file = save_metadata(version, 'random_forest_pregame', metrics, is_ready, failed,
                   metadata_dir=metadata_dir, filename_prefix='pregame_metadata')
+
+    if is_ready:
+        promote_model(model_file, meta_file, 'pregame')
 
     print(f"Train accuracy: {accuracy_score(y_train, model.predict(X_train)):.2%}")
     print(f"Test  accuracy: {metrics['accuracy']:.2%}  |  F1: {metrics['f1_score']:.4f}  "
@@ -611,6 +708,8 @@ if __name__ == '__main__':
 
     nn_ver      = train_neural_network()
     pregame_ver = train_pregame_rf()
+
+    update_readme_metrics()
 
     print("\n" + "=" * 60)
     print("ENTRENAMENT COMPLETAT")

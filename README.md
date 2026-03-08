@@ -76,6 +76,25 @@ Each row represents one player's performance in one game, containing pre-game me
 
 ## Model & Data Storage
 
+### Model Metrics
+
+Metrics are updated automatically after each training run when the model passes the deployment quality gate.
+
+<!-- METRICS_START -->
+| Metric | Neural Network (v2) | Pre-Game RF (v2) |
+|:---|:---:|:---:|
+| Accuracy | 97.76% | 76.75% |
+| F1 Score | 0.9781 | 0.7663 |
+| ROC-AUC | 0.9968 | 0.8955 |
+| Precision | 0.9731 | 0.7704 |
+| Recall | 0.9832 | 0.7622 |
+| Deployment Ready | ✅ | ✅ |
+
+*Last updated: 2026-03-08*
+<!-- METRICS_END -->
+
+---
+
 Models and datasets are **not stored in Git**. They are versioned with [DVC](https://dvc.co) and stored in the companion [DagsHub repository](https://dagshub.com/Waffle639/LoL-AI).
 
 ```bash
