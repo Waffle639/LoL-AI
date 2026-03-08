@@ -125,11 +125,39 @@ Create an account or log in to retrieve your API key. All prediction and billing
 ### Prediction — `POST /predict`
 
 Send a full player/team snapshot and receive a win probability. Each successful call consumes 1 credit.
+
+> **`team_encoded`, `player_encoded`, `champion_encoded`** accept either the **name** (e.g. `"G2 Esports"`, `"Caps"`, `"Azir"`) or the **numeric code** (e.g. `42`, `130`, `7`). The API resolves names case-insensitively.
+
 ```http
 POST /predict
 X-API-Key: lol_xxxxxxxxxxxx
 Content-Type: application/json
 
+{
+  "team_encoded": "G2 Esports",
+  "player_encoded": "Caps",
+  "champion_encoded": "Azir",
+  "side_encoded": 0,
+  "position_encoded": "mid",
+  "team_winrate": 0.65,
+  "player_winrate": 0.58,
+  "player_kda": 3.2,
+  "champion_winrate": 0.52,
+  "player_champ_winrate": 0.71,
+  "kills": 5, "deaths": 2, "assists": 8,
+  "teamkills": 25, "teamdeaths": 10,
+  "dragons": 3, "opp_dragons": 1,
+  "elders": 1, "opp_elders": 0,
+  "barons": 2, "opp_barons": 0,
+  "towers": 9, "opp_towers": 3,
+  "totalgold": 15000
+}
+```
+
+<details>
+<summary>Alternative: using numeric codes</summary>
+
+```json
 {
   "team_encoded": 42,
   "player_encoded": 130,
@@ -150,6 +178,8 @@ Content-Type: application/json
   "totalgold": 15000
 }
 ```
+</details>
+
 ```json
 {
   "result_label": "Victory",
@@ -165,6 +195,9 @@ Content-Type: application/json
 ### Pre-Game Prediction — `POST /predict/pregame`
 
 Send only pre-game information (team, champion, player history) before the match starts and receive a win probability. Each successful call consumes 1 credit.
+
+> **`team_name`, `player`, `champion`** accept either the **name** (e.g. `"G2 Esports"`, `"Caps"`, `"Azir"`) or the **numeric code** (e.g. `42`, `130`, `7`). Names are matched case-insensitively.
+
 ```http
 POST /predict/pregame
 X-API-Key: lol_xxxxxxxxxxxx
@@ -197,11 +230,11 @@ Content-Type: application/json
 ```
 ```json
 {
-  "result_label": "Victory",
-  "prediction": 1,
-  "probability": 0.7782,
-  "model_version": "1.0.0",
-  "credits_remaining": 19
+  "team1": {"team_name": "G2 Esports",    "side": "Blue", "victory_prob": 58.34},
+  "team2": {"team_name": "MAD Lions KOI", "side": "Red",  "victory_prob": 41.66},
+  "predicted_winner": "G2 Esports",
+  "confidence": 58.34,
+  "model_version": "1.0.0"
 }
 ```
 

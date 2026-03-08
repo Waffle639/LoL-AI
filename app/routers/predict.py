@@ -12,6 +12,33 @@ import pandas as pd
 
 router = APIRouter(tags=["predict"])
 
+
+def _resolve_categorical(value, encoder, field_name: str) -> int:
+    """Resolve a string name or numeric code to an encoded integer."""
+    if isinstance(value, int):
+        return value
+    # String that is a plain number → use as-is
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        pass
+    classes = encoder.classes_
+    # Exact match
+    if value in classes:
+        return int(encoder.transform([value])[0])
+    # Case-insensitive match
+    lower = value.lower()
+    for c in classes:
+        if str(c).lower() == lower:
+            return int(encoder.transform([c])[0])
+    from fastapi import HTTPException
+    raise HTTPException(
+        status_code=422,
+        detail=f"'{value}' no és un valor vàlid per a '{field_name}'. "
+               f"Usa el nom exacte del dataset o el codi numèric."
+    )
+
+
 ALL_FEATURES = [
     'team_encoded', 'player_encoded', 'champion_encoded', 'side_encoded', 'position_encoded',
     'team_winrate', 'player_winrate', 'player_kda', 'champion_winrate', 'player_champ_winrate',
@@ -34,6 +61,16 @@ def predict(
         raise HTTPException(status_code=503, detail="Model no disponible")
 
     input_dict = data.model_dump()
+
+    # Resolve string names → int codes using the model's LabelEncoders
+    enc = _neural_net.encoders
+    for field, key in [
+        ('team_encoded', 'team'), ('player_encoded', 'player'),
+        ('champion_encoded', 'champion'), ('side_encoded', 'side'),
+        ('position_encoded', 'position'),
+    ]:
+        input_dict[field] = _resolve_categorical(input_dict[field], enc[key], field)
+
     X = pd.DataFrame([[input_dict[f] for f in ALL_FEATURES]], columns=ALL_FEATURES)
 
     try:

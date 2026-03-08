@@ -6,7 +6,7 @@ Dataset: 2024_LoL_esports_match_data_from_OraclesElixir1.csv
 """
 
 from pydantic import BaseModel, Field
-from typing import Literal, Optional, List
+from typing import Literal, Optional, List, Union
 
 
 # ---------------------------------------------------------------------------
@@ -56,12 +56,12 @@ class LoLNeuralNetInput(BaseModel):
     i les 14 stats de partida.
     """
 
-    # --- Variables categòriques (Label Encoded, enters) ---
-    team_encoded: int = Field(..., ge=0, description="Equip codificat amb LabelEncoder")
-    player_encoded: int = Field(..., ge=0, description="Jugador codificat amb LabelEncoder")
-    champion_encoded: int = Field(..., ge=0, description="Campió codificat amb LabelEncoder")
-    side_encoded: int = Field(..., ge=0, le=1, description="Costat: 0=Blue, 1=Red")
-    position_encoded: int = Field(..., ge=0, le=4, description="Posició codificada: top/jng/mid/bot/sup (0-4)")
+    # --- Variables categòriques (Label Encoded, enters o noms) ---
+    team_encoded: Union[int, str] = Field(..., description="Equip: nom (ex: 'G2 Esports') o codi numèric")
+    player_encoded: Union[int, str] = Field(..., description="Jugador: nom (ex: 'Caps') o codi numèric")
+    champion_encoded: Union[int, str] = Field(..., description="Campió: nom (ex: 'Azir') o codi numèric")
+    side_encoded: Union[int, str] = Field(..., description="Costat: 'Blue'/'Red' o 0/1")
+    position_encoded: Union[int, str] = Field(..., description="Posició: 'top'/'jng'/'mid'/'bot'/'sup' o codi 0-4")
 
     # --- Stats històriques (calculades abans de la partida) ---
     team_winrate: float = Field(..., ge=0.0, le=1.0, description="Winrate de l'equip (0.0-1.0)")
@@ -142,8 +142,8 @@ class ErrorResponse(BaseModel):
 class PreGamePlayerInput(BaseModel):
     """Un jugador amb el seu campió i posició per a predicció pre-game."""
 
-    player: str = Field(..., description="Nom del jugador (ex: 'Caps')")
-    champion: str = Field(..., description="Nom del campió (ex: 'Azir')")
+    player: Union[int, str] = Field(..., description="Jugador: nom (ex: 'Caps') o codi numèric")
+    champion: Union[int, str] = Field(..., description="Campió: nom (ex: 'Azir') o codi numèric")
     position: Literal['top', 'jng', 'mid', 'bot', 'sup'] = Field(
         ..., description="Posició: top / jng / mid / bot / sup"
     )
@@ -152,7 +152,7 @@ class PreGamePlayerInput(BaseModel):
 class PreGameTeamInput(BaseModel):
     """Un equip de 5 jugadors per a predicció pre-game."""
 
-    team_name: str = Field(..., description="Nom de l'equip (ex: 'G2 Esports')")
+    team_name: Union[int, str] = Field(..., description="Equip: nom (ex: 'G2 Esports') o codi numèric")
     side: Literal['Blue', 'Red'] = Field(..., description="Costat: Blue o Red")
     players: List[PreGamePlayerInput] = Field(
         ..., min_length=5, max_length=5,
