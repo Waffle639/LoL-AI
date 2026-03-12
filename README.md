@@ -283,7 +283,7 @@ Landing page shown after completed Stripe payment confirming credits have been a
 pip install -r requirements.txt
 
 # Train models
-py -m app.train
+python -m app.ml.train
 
 # Start API
 uvicorn app.api:app --reload

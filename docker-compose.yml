@@ -1,0 +1,16 @@
+name: lol2024-ai
+
+services:
+  api:
+    build:
+      context: .
+      target: production
+    ports:
+      - "${PORT:-5508}:8000"
+    env_file:
+      - .env
+    volumes:
+      # data/ and logs/ are excluded from the image and mounted at runtime
+      - ./logs:/app/logs
+      - ./data:/app/data
+    restart: unless-stopped

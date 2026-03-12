@@ -1,0 +1,47 @@
+# Python virtual environments
+**/.venv
+**/venv
+
+# Python cache
+**/__pycache__
+**/*.pyc
+**/*.pyo
+
+# Testing and type checking
+**/.pytest_cache
+**/.mypy_cache
+**/.coverage
+**/htmlcov
+
+# IDE and editors
+.vscode
+.idea
+*.swp
+.DS_Store
+
+# Git
+.git
+.gitignore
+
+# Logs and data (mounted as volumes at runtime)
+*.log
+logs/
+data/
+
+# Notebooks and training scripts (not needed at inference time)
+notebooks/
+
+# Tests (not needed in container)
+tests/
+
+# DVC data versioning files
+*.dvc
+.dvc/
+
+# Documentation
+*.md
+
+# Environment files (injected via env_file in docker-compose, never baked into image)
+.env
+.env.*
+!.env.example
