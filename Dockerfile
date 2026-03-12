@@ -27,13 +27,22 @@ RUN useradd -m -u 1000 appuser && \
 # ==================== PRODUCTION STAGE ====================
 FROM base AS production
 
+# DagsHub credentials passed at build time (never stored in final image)
+ARG DAGSHUB_USER
+ARG DAGSHUB_TOKEN
+
 # Copy application code (includes app/config/deployment_criteria.yaml)
 # --chown is required because COPY always runs as root, regardless of any USER instruction.
 COPY --chown=appuser:appuser app/ ./app/
 
-# Copy pre-trained model weights and metadata
-COPY --chown=appuser:appuser models/ ./models/
-COPY --chown=appuser:appuser metadata/ ./metadata/
+# Pull models and metadata from DagsHub via DVC
+COPY .dvc/config .dvc/config
+COPY models.dvc metadata.dvc ./
+RUN dvc remote modify dagshub --local user "${DAGSHUB_USER}" && \
+    dvc remote modify dagshub --local password "${DAGSHUB_TOKEN}" && \
+    dvc pull models.dvc metadata.dvc && \
+    rm -f .dvc/config.local && \
+    chown -R appuser:appuser models/ metadata/
 
 # Switch to non-root user
 USER appuser

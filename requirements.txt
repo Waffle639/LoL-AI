@@ -30,3 +30,6 @@ python-multipart==0.0.9
 itsdangerous
 
 pyyaml==6.0.3
+
+# DVC
+dvc[http]

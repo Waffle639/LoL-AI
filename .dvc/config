@@ -2,3 +2,5 @@
     remote = dagshub
 ['remote "dagshub"']
     url = https://dagshub.com/Waffle639/LoL-AI.dvc
+    auth = basic
+    user = Waffle639

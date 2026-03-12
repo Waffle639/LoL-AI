@@ -5,6 +5,9 @@ services:
     build:
       context: .
       target: production
+      args:
+        DAGSHUB_USER: ${DAGSHUB_USER}
+        DAGSHUB_TOKEN: ${DAGSHUB_TOKEN}
     ports:
       - "${PORT:-5508}:8000"
     env_file:

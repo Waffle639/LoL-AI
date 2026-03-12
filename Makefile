@@ -1,3 +1,5 @@
+
+
 -include .env
 export
 
@@ -22,6 +24,7 @@ $(VENV):
 help:
 	@echo "Mandatory targets:"
 	@echo "  make setup             Create venv and install dependencies (incl. PyTorch CPU)"
+	@echo "  make dvc               Configure DVC remote credentials and pull data/models"
 	@echo "  make test              Run pytest tests"
 	@echo "  make docker-build      Build Docker image"
 	@echo "  make docker-up         Start the service"
@@ -44,6 +47,30 @@ setup:
 	$(PIP) install torch --index-url https://download.pytorch.org/whl/cpu
 	$(PIP) install -r requirements.txt
 	@echo "Setup complete. Activate with: source $(VENV)/bin/activate"
+
+# ===================== DVC =====================
+# Configure DVC credentials for the DagsHub remote and pull all tracked files.
+# Credentials are read from .env (DAGSHUB_USER / DAGSHUB_TOKEN).
+# If the password is already stored in .dvc/config.local the configuration
+# step is skipped and only the pull is executed.
+#
+# Usage:
+#   make dvc                          # uses DAGSHUB_USER / DAGSHUB_TOKEN from .env
+#   make dvc DAGSHUB_TOKEN=<token>    # one-off override
+# ---------------------------------------------------------------------------
+dvc: $(VENV)
+	@test -n "$(DAGSHUB_USER)"  || (echo "ERROR: DAGSHUB_USER is not set in .env" && exit 1)
+	@test -n "$(DAGSHUB_TOKEN)" || (echo "ERROR: DAGSHUB_TOKEN is not set in .env" && exit 1)
+	@if grep -q 'password' .dvc/config.local 2>/dev/null; then \
+		echo "DVC credentials already configured — skipping setup"; \
+	else \
+		echo "Configuring DVC remote credentials..."; \
+		$(VENV)/bin/dvc remote modify dagshub --local auth basic; \
+		$(VENV)/bin/dvc remote modify dagshub --local user "$(DAGSHUB_USER)"; \
+		$(VENV)/bin/dvc remote modify dagshub --local password "$(DAGSHUB_TOKEN)"; \
+		echo "Credentials saved to .dvc/config.local"; \
+	fi
+	$(VENV)/bin/dvc pull
 
 test: $(VENV)
 	@test -d tests || (echo "ERROR: tests/ directory not found. Tests are added in Session 11." && exit 1)
