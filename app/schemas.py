@@ -122,7 +122,6 @@ class HealthResponse(BaseModel):
     """Response schema per l'endpoint de health check."""
 
     status: str = Field(..., description="Estat del servei: 'healthy' o 'unhealthy'")
-    model_loaded: bool = Field(..., description="Si el model SGD està carregat")
     neural_net_loaded: bool = Field(..., description="Si la xarxa neuronal PyTorch està carregada")
     pregame_model_loaded: bool = Field(False, description="Si el RandomForest pre-game està carregat")
     model_version: Optional[str] = Field(None, description="Versió del model carregat")

@@ -1,58 +1,70 @@
-# Multi-stage build for LoL 2024 AI API
+# =============================================================
+# Multi-stage build — LoL 2024 AI API
+#
+# Prerequisites (run on the host before building):
+#   make dvc   →  pulls models/ and metadata/ via DVC
+#
+# Build:
+#   docker compose build
+#   docker compose up
+# =============================================================
 
-# ==================== BASE STAGE ====================
-FROM python:3.11-slim AS base
+# ──────────────────────────────────────────────
+# Stage 1 – builder: install Python dependencies
+# ──────────────────────────────────────────────
+FROM python:3.11-slim AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-# Install system dependencies
+# System deps needed only to compile wheels
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl && \
-    apt-get clean && \
+    apt-get install -y --no-install-recommends build-essential && \
     rm -rf /var/lib/apt/lists/*
 
-# Install PyTorch CPU-only first (large package, kept in its own layer)
-# CPU-only variant is ~700 MB lighter than the default CUDA build
+# PyTorch CPU-only (separate layer — changes rarely, benefits from cache)
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
-# Install remaining Python dependencies (separate layer for caching)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create non-root user with standard UID 1000
-RUN useradd -m -u 1000 appuser && \
-    mkdir -p data logs && \
+# ──────────────────────────────────────────────
+# Stage 2 – production: lean runtime image
+# ──────────────────────────────────────────────
+FROM python:3.11-slim AS production
+
+WORKDIR /app
+
+# Runtime system dep: curl for the health-check probe
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy installed packages from builder (avoids compiler toolchain in the final image)
+COPY --from=builder /usr/local/lib/python3.11 /usr/local/lib/python3.11
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Non-root user — UID 1001 matches the host user to avoid volume permission issues
+RUN useradd -m -u 1001 appuser && \
+    mkdir -p logs && \
     chown -R appuser:appuser /app
 
-# ==================== PRODUCTION STAGE ====================
-FROM base AS production
-
-# DagsHub credentials passed at build time (never stored in final image)
-ARG DAGSHUB_USER
-ARG DAGSHUB_TOKEN
-
-# Copy application code (includes app/config/deployment_criteria.yaml)
-# --chown is required because COPY always runs as root, regardless of any USER instruction.
+# Application source
 COPY --chown=appuser:appuser app/ ./app/
 
-# Pull models and metadata from DagsHub via DVC
-COPY .dvc/config .dvc/config
-COPY models.dvc metadata.dvc ./
-RUN dvc remote modify dagshub --local user "${DAGSHUB_USER}" && \
-    dvc remote modify dagshub --local password "${DAGSHUB_TOKEN}" && \
-    dvc pull models.dvc metadata.dvc && \
-    rm -f .dvc/config.local && \
-    chown -R appuser:appuser models/ metadata/
+# Model artefacts — already pulled locally via `make dvc`
+# Only the files the API actually loads at inference time are included:
+#   models/  →  neural-net weights + pre-game Random Forest
+#   metadata/  →  JSON files with feature lists, scaler params, label encoders
+# Training data (data/) and notebooks are intentionally excluded.
+COPY --chown=appuser:appuser models/ ./models/
+COPY --chown=appuser:appuser metadata/ ./metadata/
 
-# Switch to non-root user
 USER appuser
 
-# Container always uses port 8000 internally
 EXPOSE 8000
 
-# Health check — model loading can take a few seconds, so start-period is generous
+# Model loading can take a few seconds on first request — give it enough start time
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl --fail http://localhost:8000/health || exit 1
 
-# Run application
 CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -10,7 +10,9 @@ PYTHON := $(VENV)/bin/python
 PYTEST := $(VENV)/bin/pytest
 PIP := $(VENV)/bin/pip
 
-PORT ?= 5508
+# PORT is read from .env (via -include above). This line is a safety fallback
+# only when PORT is not defined in .env at all.
+PORT ?= 8000
 
 .DEFAULT_GOAL := help
 
@@ -61,15 +63,11 @@ setup:
 dvc: $(VENV)
 	@test -n "$(DAGSHUB_USER)"  || (echo "ERROR: DAGSHUB_USER is not set in .env" && exit 1)
 	@test -n "$(DAGSHUB_TOKEN)" || (echo "ERROR: DAGSHUB_TOKEN is not set in .env" && exit 1)
-	@if grep -q 'password' .dvc/config.local 2>/dev/null; then \
-		echo "DVC credentials already configured — skipping setup"; \
-	else \
-		echo "Configuring DVC remote credentials..."; \
-		$(VENV)/bin/dvc remote modify dagshub --local auth basic; \
-		$(VENV)/bin/dvc remote modify dagshub --local user "$(DAGSHUB_USER)"; \
-		$(VENV)/bin/dvc remote modify dagshub --local password "$(DAGSHUB_TOKEN)"; \
-		echo "Credentials saved to .dvc/config.local"; \
-	fi
+	@echo "Configuring DVC remote credentials..."
+	@$(VENV)/bin/dvc remote modify dagshub --local auth basic
+	@$(VENV)/bin/dvc remote modify dagshub --local user "$(DAGSHUB_USER)"
+	@$(VENV)/bin/dvc remote modify dagshub --local password "$(DAGSHUB_TOKEN)"
+	@echo "Credentials saved to .dvc/config.local"
 	$(VENV)/bin/dvc pull
 
 test: $(VENV)
@@ -81,6 +79,7 @@ docker-build:
 
 docker-up:
 	mkdir -p data logs
+	chmod a+w logs
 	docker compose up -d
 	@echo "Service started at http://localhost:$(PORT)"
 
@@ -137,7 +136,7 @@ predict-pregame:
 # ===================== OPTIONAL TARGETS =====================
 
 dev: $(VENV)
-	$(VENV)/bin/uvicorn app.api:app --reload --port 8000
+	$(VENV)/bin/uvicorn app.api:app --reload --host 0.0.0.0 --port $(PORT)
 
 pipeline: $(VENV)
 	$(PYTHON) -m app.ml.pipeline
