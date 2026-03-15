@@ -9,11 +9,10 @@ Endpoints:
     POST /webhooks/stripe       - Webhook de Stripe (ús intern)
 """
 
-from fastapi import FastAPI, HTTPException, Request, Depends
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.exceptions import RequestValidationError
-from fastapi.staticfiles import StaticFiles
-from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 from sqlalchemy.orm import Session
 import joblib
@@ -79,14 +78,17 @@ app = FastAPI(
 )
 
 app.add_middleware(
-    SessionMiddleware,
-    secret_key=os.getenv("SECRET_KEY", "changeme-set-a-secret-in-env"),
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://tu-dominio.com",
+        "https://app.tu-dominio.com",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
-# ==================== STATIC FILES ====================
-import pathlib
-_assets_dir = pathlib.Path(__file__).parent / "assets"
-app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="assets")
 
 # ==================== ROUTERS ====================
 app.include_router(predict.router)
@@ -120,6 +122,12 @@ def root():
             "docs":     "/docs"
         }
     }
+
+
+@app.get("/success")
+def payment_success():
+    dashboard_url = os.getenv("FRONTEND_DASHBOARD_URL", "http://localhost:5174")
+    return RedirectResponse(url=f"{dashboard_url}/billing?success=true", status_code=303)
     
 @app.get("/billing/credits")
 def get_credits(api_key: str = Depends(verify_api_key), db: Session = Depends(get_db)):

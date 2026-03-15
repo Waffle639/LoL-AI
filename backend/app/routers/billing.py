@@ -1,27 +1,24 @@
-"""
-Endpoints de billing con registro de cuenta.
+"""Billing endpoints 100% JSON para frontend SPA."""
 
-GET  /billing/register   → Formulario de registro + elección de plan
-POST /billing/register   → Procesa el formulario y redirige a Stripe
-GET  /billing/success    → Muestra la API key tras el pago
-GET  /billing/cancel     → Página de cancelación
-GET  /billing/credits    → Consulta créditos (requiere X-API-Key)
-"""
-
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db, APIKey, CreditTransaction, User, PendingRegistration
 from app.auth import get_api_key, create_user_and_api_key, hash_key, hash_password
-from app.template.template import _html_success, _html_error, _html_cancel, html_register
+from pydantic import BaseModel, EmailStr
 import stripe
 import os
 import secrets
 import logging
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/billing", tags=["billing"])
+
+
+class RegisterBillingRequest(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+    plan: str = "starter"
 
 PACKS = {
     "starter": {
@@ -43,43 +40,34 @@ PACKS = {
 }
 
 
-# ==================== REGISTRO ====================
-
-@router.get("/register", response_class=HTMLResponse)
-def register_page():
-    """Muestra el formulario de registro y selección de plan."""
-    return HTMLResponse(html_register())
-
-
 @router.get("/checkout")
-def checkout_redirect():
-    """Compatibilidad: redirige al nuevo flujo de registro."""
-    return RedirectResponse("/billing/register", status_code=301)
+def checkout_info():
+    return {
+        "message": "Use POST /billing/register para crear una sesión de checkout",
+        "plans": list(PACKS.keys()),
+    }
 
 
 @router.post("/register")
-async def register_submit(request: Request, db: Session = Depends(get_db)):
-    """Valida el formulario, guarda el registro pendiente y redirige a Stripe."""
-    form     = await request.form()
-    username = form.get("username", "").strip()
-    email    = form.get("email", "").strip().lower()
-    password = form.get("password", "").strip()
-    plan     = form.get("plan", "starter")
+def register_submit(payload: RegisterBillingRequest, db: Session = Depends(get_db)):
+    """Valida el payload, guarda registro pendiente y crea checkout de Stripe."""
+    username = payload.username.strip()
+    email = payload.email.strip().lower()
+    password = payload.password.strip()
+    plan = payload.plan
 
-    if not username or not email or not password:
-        return HTMLResponse(html_register(error="Todos los campos son obligatorios."))
     if len(username) < 3:
-        return HTMLResponse(html_register(error="El nombre de usuario debe tener al menos 3 caracteres."))
+        raise HTTPException(status_code=400, detail="El nombre de usuario debe tener al menos 3 caracteres.")
     if len(password) < 8:
-        return HTMLResponse(html_register(error="La contraseña debe tener al menos 8 caracteres."))
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 8 caracteres.")
     if plan not in PACKS:
-        return HTMLResponse(html_register(error="Plan no válido."))
+        raise HTTPException(status_code=400, detail="Plan no válido.")
 
     existing = db.query(User).filter(
         (User.email == email) | (User.username == username)
     ).first()
     if existing:
-        return HTMLResponse(html_register(error="El email o el nombre de usuario ya están registrados."))
+        raise HTTPException(status_code=409, detail="El email o el nombre de usuario ya están registrados.")
 
     pending_id = secrets.token_urlsafe(24)
     pending    = PendingRegistration(
@@ -98,7 +86,7 @@ async def register_submit(request: Request, db: Session = Depends(get_db)):
     if not price_id:
         db.delete(pending)
         db.commit()
-        return HTMLResponse(html_register(error=f"El plan «{pack_info['name']}» no está disponible ahora mismo."))
+        raise HTTPException(status_code=503, detail=f"El plan {pack_info['name']} no está disponible ahora mismo.")
 
     base_url = os.getenv("API_BASE_URL", "http://localhost:8000")
 
@@ -112,7 +100,7 @@ async def register_submit(request: Request, db: Session = Depends(get_db)):
                 "plan":       plan,
                 "credits":    str(pack_info["credits"]),
             },
-            success_url = f"{base_url}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
+            success_url = f"{base_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url  = f"{base_url}/billing/cancel",
         )
         session_kwargs["line_items"] = [{"price": price_id, "quantity": 1}]
@@ -120,91 +108,23 @@ async def register_submit(request: Request, db: Session = Depends(get_db)):
             session_kwargs["subscription_data"] = {"metadata": {"pending_id": pending_id}}
 
         stripe_session = stripe.checkout.Session.create(**session_kwargs)
-        return RedirectResponse(stripe_session.url, status_code=303)
+        return {
+            "checkout_url": stripe_session.url,
+            "plan": plan,
+            "credits": pack_info["credits"],
+        }
 
     except stripe.error.StripeError as e:
         db.delete(pending)
         db.commit()
-        return HTMLResponse(html_register(error=str(e)))
-
-
-# ==================== SUCCESS ====================
-
-@router.get("/success", response_class=HTMLResponse)
-def success(session_id: str = Query(...), db: Session = Depends(get_db)):
-    """Página de éxito tras el pago. Muestra la API key generada por el webhook."""
-    try:
-        session = stripe.checkout.Session.retrieve(session_id)
-    except stripe.error.StripeError:
-        return HTMLResponse(_html_error("Sesión de Stripe inválida."))
-
-    if session.payment_status not in ("paid", "no_payment_required"):
-        return HTMLResponse(_html_error(
-            "El pago no se ha completado todavía. Espera unos segundos y recarga la página."
-        ))
-
-    tx = db.query(CreditTransaction).filter(
-        CreditTransaction.stripe_session_id == session_id
-    ).first()
-
-    # Fallback: el webhook no ha llegado aún (habitual en local sin Stripe CLI activo)
-    if not tx:
-        logger.info(f"Webhook todavía no procesado para {session_id}. Ejecutando fallback.")
-        try:
-            metadata   = dict(session.metadata or {})
-            plan       = metadata.get("plan", "starter")
-            credits    = int(metadata.get("credits", PACKS.get(plan, PACKS["starter"])["credits"]))
-            cd         = getattr(session, "customer_details", None)
-            email_fb   = (getattr(cd, "email", None) or (cd.get("email") if hasattr(cd, "get") else None) or "unknown") if cd else "unknown"
-            customer_id = getattr(session, "customer", None)
-
-            create_user_and_api_key(
-                db                = db,
-                pending_id        = metadata.get("pending_id"),
-                customer_id       = customer_id,
-                email_fallback    = email_fb,
-                plan              = plan,
-                credits           = credits,
-                stripe_session_id = session.id,
-            )
-        except Exception as exc:
-            import traceback
-            logger.error(f"Error en fallback /success: {exc}\n{traceback.format_exc()}")
-            return HTMLResponse(_html_error(
-                "Tu pago se ha procesado pero hubo un error generando la key. "
-                "Contacta soporte o espera unos segundos y recarga."
-            ))
-        tx = db.query(CreditTransaction).filter(
-            CreditTransaction.stripe_session_id == session_id
-        ).first()
-        if not tx:
-            return HTMLResponse(_html_error(
-                "Tu pago se ha procesado pero la key aún se está generando. "
-                "Espera unos segundos y recarga la página."
-            ))
-
-    raw_key = tx.description if tx.description and tx.description.startswith("lol_") else None
-
-    if not raw_key:
-        return HTMLResponse(_html_error(
-            "Key ya mostrada anteriormente. "
-            "Accede a tu cuenta en <a href='/account/login' style='color:#0BC4E3'>/account/login</a> para ver tus créditos."
-        ))
-
-    plan    = session.metadata.get("plan", "starter") if session.metadata else "starter"
-    credits = PACKS.get(plan, PACKS["starter"])["credits"]
-
-    tx.description = f"{PACKS.get(plan, PACKS['starter'])['name']} — key mostrada"
-    db.commit()
-
-    return HTMLResponse(_html_success(raw_key, credits))
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 # ==================== CANCEL ====================
 
-@router.get("/cancel", response_class=HTMLResponse)
+@router.get("/cancel")
 def cancel():
-    return HTMLResponse(_html_cancel())
+    return {"status": "cancelled", "message": "Pago cancelado por el usuario"}
 
 
 # ==================== CREDITS ====================
