@@ -51,3 +51,16 @@ models/
 /models
 /data
 /metadata
+
+# Frontend
+frontend/landing/node_modules
+frontend/landing/dist
+frontend/landing/.env
+frontend/dashboard/node_modules
+frontend/dashboard/dist
+frontend/dashboard/.env
+
+# Backend
+backend/__pycache__
+backend/.env
+backend/lol.db

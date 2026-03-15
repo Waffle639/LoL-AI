@@ -280,6 +280,7 @@ Landing page shown after completed Stripe payment confirming credits have been a
 ---
 ## Quick Start
 ```bash
+cd backend
 pip install -r requirements.txt
 
 # Train models
@@ -287,7 +288,22 @@ python -m app.ml.train
 
 # Start API
 uvicorn app.api:app --reload
+
+# In another terminal: start landing
+cd ../frontend/landing
+npm install
+npm run dev
+
+# In another terminal: start dashboard
+cd ../dashboard
+npm install
+npm run dev
 ```
+
+Default local ports:
+- Backend API: `http://localhost:8000`
+- Landing app: `http://localhost:5173`
+- Dashboard app: `http://localhost:5174`
 
 ---
 
@@ -314,6 +330,6 @@ The three Jupyter notebooks document the full ML experimentation behind the API 
 
 | Notebook | Model | Description |
 |---|---|---|
-| `IA_LoL_Prediccion_Pre_Game.ipynb` | RandomForestClassifier | Pre-game prediction using team winrates, player KDA, champion mastery. 200 trees, max_depth 15. |
-| `IA_LoL_NeuralNetwork.ipynb` | PyTorch Neural Network | In-game prediction from live stats. Architecture 24→64→32→1, dropout 0.2, Adam optimizer. |
-| `IA_LoL.ipynb` | SGDClassifier | Early experimentation notebook (reference only, not used in production). |
+| `backend/notebooks/IA_LoL_Prediccion_Pre_Game.ipynb` | RandomForestClassifier | Pre-game prediction using team winrates, player KDA, champion mastery. 200 trees, max_depth 15. |
+| `backend/notebooks/IA_LoL_NeuralNetwork.ipynb` | PyTorch Neural Network | In-game prediction from live stats. Architecture 24→64→32→1, dropout 0.2, Adam optimizer. |
+| `backend/notebooks/IA_LoL.ipynb` | SGDClassifier | Early experimentation notebook (reference only, not used in production). |
