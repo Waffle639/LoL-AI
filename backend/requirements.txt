@@ -10,6 +10,7 @@ uvicorn[standard]==0.40.0
 
 # Validation (from Session 3)
 pydantic==2.12.5
+email-validator==2.3.0
 
 # NEW in Session 4: Configuration + Data formats
 pydantic-settings

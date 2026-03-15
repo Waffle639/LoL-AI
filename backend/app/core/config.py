@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings
 from pathlib import Path
 import logging
 
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 class Settings(BaseSettings):
