@@ -9,6 +9,8 @@ VENV := .venv
 PYTHON := $(VENV)/bin/python
 PYTEST := $(VENV)/bin/pytest
 PIP := $(VENV)/bin/pip
+RUN_DIR := .run
+PID_FILE := $(RUN_DIR)/services.pid
 
 # PORT is read from .env (via -include above). This line is a safety fallback
 # only when PORT is not defined in .env at all.
@@ -37,6 +39,11 @@ help:
 	@echo ""
 	@echo "Optional targets:"
 	@echo "  make dev               Run API locally (uvicorn with hot-reload)"
+	@echo "  make start-api         Start backend API in dev mode"
+	@echo "  make start-landing     Start landing app (Vite)"
+	@echo "  make start-dashboard   Start dashboard app (Vite)"
+	@echo "  make start-all         Start API + landing + dashboard together"
+	@echo "  make stop-all          Stop all services started by start-all"
 	@echo "  make pipeline          Run data pipeline"
 	@echo "  make train             Train models"
 	@echo "  make logs              Tail Docker service logs"
@@ -47,7 +54,7 @@ setup:
 	$(PIP) install --upgrade pip
 	# PyTorch CPU-only (not in requirements.txt — avoids pulling the heavy CUDA build)
 	$(PIP) install torch --index-url https://download.pytorch.org/whl/cpu
-	$(PIP) install -r requirements.txt
+	$(PIP) install -r backend/requirements.txt
 	@echo "Setup complete. Activate with: source $(VENV)/bin/activate"
 
 # ===================== DVC =====================
@@ -71,8 +78,8 @@ dvc: $(VENV)
 	$(VENV)/bin/dvc pull
 
 test: $(VENV)
-	@test -d tests || (echo "ERROR: tests/ directory not found. Tests are added in Session 11." && exit 1)
-	$(PYTEST) tests/ -v
+	@test -d backend/tests || (echo "ERROR: backend/tests/ directory not found." && exit 1)
+	$(PYTEST) backend/tests/ -v
 
 docker-build:
 	docker compose build
@@ -136,13 +143,57 @@ predict-pregame:
 # ===================== OPTIONAL TARGETS =====================
 
 dev: $(VENV)
-	$(VENV)/bin/uvicorn app.api:app --reload --host 0.0.0.0 --port $(PORT)
+	cd backend && ../$(VENV)/bin/uvicorn app.api:app --reload --host 0.0.0.0 --port $(PORT)
+
+start-api: dev
+
+start-landing:
+	cd frontend/landing && npm run dev
+
+start-dashboard:
+	cd frontend/dashboard && npm run dev
+
+start-all:
+	@set -e; \
+	ROOT_DIR="$(CURDIR)"; \
+	PID_FILE_PATH="$$ROOT_DIR/$(PID_FILE)"; \
+	LOG_DIR="$$ROOT_DIR/logs"; \
+	mkdir -p "$$LOG_DIR" "$$ROOT_DIR/$(RUN_DIR)"; \
+	if [ -f "$$PID_FILE_PATH" ] && [ -s "$$PID_FILE_PATH" ]; then \
+		echo "ERROR: $$PID_FILE_PATH already exists. Run 'make stop-all' first."; \
+		exit 1; \
+	fi; \
+	: > "$$PID_FILE_PATH"; \
+	(cd "$$ROOT_DIR/backend" && nohup "$$ROOT_DIR/$(VENV)/bin/uvicorn" app.api:app --reload --host 0.0.0.0 --port $(PORT) > "$$LOG_DIR/api.dev.log" 2>&1 & echo $$! >> "$$PID_FILE_PATH"); \
+	(cd "$$ROOT_DIR/frontend/landing" && nohup npm run dev -- --host 0.0.0.0 > "$$LOG_DIR/landing.dev.log" 2>&1 & echo $$! >> "$$PID_FILE_PATH"); \
+	(cd "$$ROOT_DIR/frontend/dashboard" && nohup npm run dev -- --host 0.0.0.0 > "$$LOG_DIR/dashboard.dev.log" 2>&1 & echo $$! >> "$$PID_FILE_PATH"); \
+	echo "Services started. PIDs:"; cat "$$PID_FILE_PATH"; \
+	echo "API: http://localhost:$(PORT) | Landing: http://localhost:5173 | Dashboard: http://localhost:5174"
+
+stop-all:
+	@set -e; \
+	ROOT_DIR="$(CURDIR)"; \
+	PID_FILE_PATH="$$ROOT_DIR/$(PID_FILE)"; \
+	if [ ! -f "$$PID_FILE_PATH" ] || [ ! -s "$$PID_FILE_PATH" ]; then \
+		echo "No PID file found at $$PID_FILE_PATH. Nothing to stop."; \
+		exit 0; \
+	fi; \
+	while read -r pid; do \
+		if kill -0 $$pid 2>/dev/null; then \
+			kill $$pid 2>/dev/null || true; \
+			echo "Stopped PID $$pid"; \
+		else \
+			echo "PID $$pid not running"; \
+		fi; \
+	done < "$$PID_FILE_PATH"; \
+	rm -f "$$PID_FILE_PATH"; \
+	echo "All tracked services stopped."
 
 pipeline: $(VENV)
-	$(PYTHON) -m app.ml.pipeline
+	cd backend && ../$(PYTHON) -m app.ml.pipeline
 
 train: $(VENV)
-	$(PYTHON) -m app.ml.train
+	cd backend && ../$(PYTHON) -m app.ml.train
 
 logs:
 	docker compose logs -f api
