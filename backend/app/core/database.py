@@ -9,9 +9,8 @@ Relaciones:
 
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, Boolean, ForeignKey, event
 from sqlalchemy.engine import Engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-from datetime import datetime
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from datetime import datetime, timezone
 import os
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./lol_api.db")
@@ -32,6 +31,11 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
+def utc_now() -> datetime:
+    """Return current UTC datetime using timezone-aware API."""
+    return datetime.now(timezone.utc)
+
+
 # ==================== MODELOS ====================
 
 class User(Base):
@@ -45,7 +49,7 @@ class User(Base):
     stripe_customer_id  = Column(String, nullable=True)
     plan                = Column(String, default="starter")   # "starter" | "monthly"
     is_active           = Column(Boolean, default=True)
-    created_at          = Column(DateTime, default=datetime.utcnow)
+    created_at          = Column(DateTime, default=utc_now)
 
     # Relación: un usuario tiene N api_keys
     api_keys            = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
@@ -60,7 +64,7 @@ class PendingRegistration(Base):
     email           = Column(String, nullable=False)
     hashed_password = Column(String, nullable=False)
     plan            = Column(String, default="starter")
-    created_at      = Column(DateTime, default=datetime.utcnow)
+    created_at      = Column(DateTime, default=utc_now)
 
 
 class APIKey(Base):
@@ -72,8 +76,8 @@ class APIKey(Base):
     is_active   = Column(Boolean, default=True)
     user_id     = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     key_prefix  = Column(String, nullable=True)               # Primeros 16 chars (para mostrar en dashboard)
-    created_at  = Column(DateTime, default=datetime.utcnow)
-    updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at  = Column(DateTime, default=utc_now)
+    updated_at  = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     # Relaciones
     user         = relationship("User", back_populates="api_keys")
@@ -88,7 +92,7 @@ class CreditTransaction(Base):
     amount              = Column(Integer)
     description         = Column(String)
     stripe_session_id   = Column(String, nullable=True)
-    created_at          = Column(DateTime, default=datetime.utcnow)
+    created_at          = Column(DateTime, default=utc_now)
 
     # Relación inversa
     api_key_obj         = relationship("APIKey", back_populates="transactions")

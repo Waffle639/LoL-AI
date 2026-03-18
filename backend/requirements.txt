@@ -7,30 +7,25 @@ joblib==1.5.2
 # API (from Session 2)
 fastapi==0.128.0
 uvicorn[standard]==0.40.0
-
 # Validation (from Session 3)
 pydantic==2.12.5
 email-validator==2.3.0
-
 # NEW in Session 4: Configuration + Data formats
 pydantic-settings
 python-dotenv
 pyarrow==23.0.0
-
 # Stripe
 stripe==10.12.0
-
 # Base de datos
 sqlalchemy==2.0.35
-
 # Variables de entorno
 python-dotenv==1.0.1
-
 # Utilidades
 python-multipart==0.0.9
 itsdangerous
-
 pyyaml==6.0.3
-
 # DVC
 dvc[http]
+# Testing
+pytest==8.4.1
+httpx==0.28.1

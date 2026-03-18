@@ -14,7 +14,7 @@ import hashlib
 import hmac
 import secrets
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import Header, HTTPException, Depends
@@ -23,6 +23,11 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db, APIKey, CreditTransaction, User, PendingRegistration
 
 logger = logging.getLogger(__name__)
+
+
+def utc_now() -> datetime:
+    """Return current UTC datetime using timezone-aware API."""
+    return datetime.now(timezone.utc)
 
 
 # ==================== UTILS ====================
@@ -84,7 +89,7 @@ def verify_api_key(api_key: str = Depends(get_api_key), db: Session = Depends(ge
 def consume_credit(key_obj: APIKey, db: Session, description: str = "Predicción"):
     """Descuenta 1 crédito y registra la transacción. Llamar tras predicción exitosa."""
     key_obj.credits    -= 1
-    key_obj.updated_at  = datetime.utcnow()
+    key_obj.updated_at  = utc_now()
     db.add(CreditTransaction(api_key=key_obj.key, amount=-1, description=description))
     db.commit()
 
@@ -158,7 +163,7 @@ def create_user_and_api_key(
         is_active  = True,
         user_id    = user.id,
         key_prefix = key_prefix,
-        created_at = datetime.utcnow(),
+        created_at = utc_now(),
     )
     db.add(key_obj)
     db.flush()  # persiste la APIKey antes de la FK en CreditTransaction

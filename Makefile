@@ -11,6 +11,7 @@ PYTEST := $(VENV)/bin/pytest
 PIP := $(VENV)/bin/pip
 RUN_DIR := .run
 PID_FILE := $(RUN_DIR)/services.pid
+PYTEST_OPTS ?= -vv --color=yes --tb=short -r fEsxX --disable-warnings
 
 # PORT is read from .env (via -include above). This line is a safety fallback
 # only when PORT is not defined in .env at all.
@@ -79,7 +80,7 @@ dvc: $(VENV)
 
 test: $(VENV)
 	@test -d backend/tests || (echo "ERROR: backend/tests/ directory not found." && exit 1)
-	$(PYTEST) backend/tests/ -v
+	$(PYTEST) backend/tests/ $(PYTEST_OPTS)
 
 docker-build:
 	docker compose build
@@ -93,6 +94,10 @@ docker-up:
 docker-down:
 	docker compose down
 
+
+docker-test:
+	docker build --target test -t firemaw-test .
+	docker run --rm firemaw-test pytest backend/tests $(PYTEST_OPTS)
 health:
 	@set -o pipefail; curl -sf http://localhost:$(PORT)/health | python3 -m json.tool || \
 	 (echo "ERROR: Service not responding at /health" && exit 1)

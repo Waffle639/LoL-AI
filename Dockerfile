@@ -24,7 +24,7 @@ RUN apt-get update && \
 # PyTorch CPU-only (separate layer — changes rarely, benefits from cache)
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
-COPY requirements.txt .
+COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ──────────────────────────────────────────────
@@ -49,7 +49,7 @@ RUN useradd -m -u 1001 appuser && \
     chown -R appuser:appuser /app
 
 # Application source
-COPY --chown=appuser:appuser app/ ./app/
+COPY --chown=appuser:appuser backend/app/ ./app/
 
 # Model artefacts — already pulled locally via `make dvc`
 # Only the files the API actually loads at inference time are included:
@@ -68,3 +68,27 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl --fail http://localhost:8000/health || exit 1
 
 CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# ──────────────────────────────────────────────
+# Stage 3 – test: run backend pytest suite
+# ──────────────────────────────────────────────
+FROM builder AS test
+
+WORKDIR /app
+
+COPY backend/app/ ./app/
+COPY backend/tests/ ./backend/tests/
+COPY models/ ./models/
+COPY metadata/ ./metadata/
+
+ENV PYTHONPATH=/app
+ENV CSV_PATH=data/2024_LoL_esports_match_data_from_OraclesElixir1.csv
+ENV MODEL_DIR=models
+ENV METADATA_DIR=metadata
+ENV DEPLOYMENT_CRITERIA=app/config/deployment_criteria.yaml
+ENV NN_MODEL_PATH=models/neural_net_v2.pth
+ENV NN_METADATA_PATH=metadata/nn_metadata_v2.json
+ENV PREGAME_MODEL_PATH=models/pregame_rf_v2.pkl
+ENV PREGAME_METADATA_PATH=metadata/pregame_metadata_v2.json
+
+CMD ["pytest", "backend/tests", "-q"]
