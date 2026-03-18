@@ -2,6 +2,28 @@ import { useState } from 'react'
 import { PLAYERS } from '../data/content'
 import { useScrollReveal } from '../hooks'
 
+const DDRAGON_VERSION = '15.5.1'
+
+const CHAMPION_KEY_MAP = {
+  "Kha'Zix": 'Khazix',
+  "Kai'Sa": 'Kaisa',
+  "Cho'Gath": 'Chogath',
+  "Bel'Veth": 'Belveth',
+  "Kog'Maw": 'KogMaw',
+  "Rek'Sai": 'RekSai',
+  "Vel'Koz": 'Velkoz',
+  Wukong: 'MonkeyKing',
+  'Nunu & Willump': 'Nunu',
+  LeBlanc: 'Leblanc',
+  'Lee Sin': 'LeeSin',
+}
+
+function getChampionIconUrl(championName) {
+  const mapped = CHAMPION_KEY_MAP[championName]
+  const normalized = (mapped || championName).replace(/[^a-zA-Z]/g, '')
+  return `https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/img/champion/${normalized}.png`
+}
+
 const IMAGE_PATHS = {
   faker:  '/images/faker.jpg',
   caps:   '/images/caps.jpg',
@@ -45,12 +67,12 @@ export default function Players() {
         }}
       >
         <div className="mb-7">
-          <p className="font-mono text-[9px] tracking-widest text-teal uppercase mb-2">
+          <p className="font-mono text-[11px] tracking-widest text-teal uppercase mb-2">
             Pro Players
           </p>
           <h2
             className="font-cinzel font-bold text-gold uppercase leading-[1.05]"
-            style={{ fontSize: 'clamp(20px, 2.6vw, 34px)' }}
+            style={{ fontSize: 'clamp(24px, 3vw, 40px)' }}
           >
             The best.<br />
             <span className="text-stroke-gold-dim">Tracked.</span>
@@ -81,7 +103,7 @@ export default function Players() {
               />
 
               <span
-                className="font-mono text-[9px] w-5 flex-shrink-0 transition-colors duration-200"
+                className="font-mono text-[10px] w-5 flex-shrink-0 transition-colors duration-200"
                 style={{ color: isActive ? 'rgba(200,169,110,0.35)' : '#3a4560' }}
               >
                 0{p.id + 1}
@@ -90,7 +112,7 @@ export default function Players() {
               <span
                 className="font-cinzel font-bold tracking-wide transition-colors duration-200"
                 style={{
-                  fontSize: 'clamp(18px, 2.3vw, 30px)',
+                  fontSize: 'clamp(22px, 2.8vw, 36px)',
                   color: isActive ? '#C8A96E' : '#8a95b0',
                 }}
               >
@@ -98,14 +120,14 @@ export default function Players() {
               </span>
 
               <span
-                className="font-mono text-[8px] tracking-widest uppercase transition-colors duration-200"
+                className="font-mono text-[10px] tracking-widest uppercase transition-colors duration-200"
                 style={{ color: isActive ? '#0AC8B9' : '#3a4560' }}
               >
                 {p.role.split(' ')[0]}
               </span>
 
               <span
-                className="font-exo text-[11px] font-light ml-auto transition-colors duration-200"
+                className="font-exo text-[13px] font-light ml-auto transition-colors duration-200"
                 style={{ color: isActive ? '#8a95b0' : '#3a4560' }}
               >
                 {p.team.split(' · ')[0]}
@@ -151,56 +173,83 @@ export default function Players() {
                 <h3
                   className="font-cinzel font-black text-gold text-right"
                   style={{
-                    fontSize: 'clamp(26px, 4vw, 50px)',
+                    fontSize: 'clamp(30px, 4.4vw, 58px)',
                     textShadow: '0 2px 20px rgba(0,0,0,0.95)',
                   }}
                 >
                   {p.name}
                 </h3>
-                <p className="font-mono text-[9px] tracking-widest text-teal uppercase text-right mt-0.5">
+                <p className="font-mono text-[11px] tracking-widest text-teal uppercase text-right mt-0.5">
                   {p.role} &nbsp;·&nbsp; {p.team}
                 </p>
 
-                <div className="flex gap-1.5 mt-2.5">
-                  {[
-                    { label: 'Win Rate', value: p.winRate, color: '#0AC8B9' },
-                    { label: 'KDA',      value: p.kda,     color: '#C8A96E' },
-                    { label: 'Games',    value: p.games,   color: '#C8D0E0' },
-                  ].map(stat => (
-                    <div
-                      key={stat.label}
-                      className="text-center min-w-[62px] px-3 py-2"
-                      style={{
-                        background: 'rgba(6,15,30,0.82)',
-                        border: '1px solid rgba(200,169,110,0.14)',
-                        backdropFilter: 'blur(4px)',
-                      }}
-                    >
-                      <p className="font-mono text-[7px] tracking-widest uppercase mb-0.5"
-                         style={{ color: '#3a4560' }}>
-                        {stat.label}
-                      </p>
-                      <p className="font-cinzel text-[14px] font-bold" style={{ color: stat.color }}>
-                        {stat.value}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                <div
+                  className="mt-3 rounded-sm px-3.5 py-3.5"
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(4,12,24,0.78) 0%, rgba(4,12,24,0.64) 100%)',
+                    border: '1px solid rgba(200,169,110,0.2)',
+                    boxShadow: '0 12px 26px rgba(0,0,0,0.32)',
+                    backdropFilter: 'blur(6px)',
+                  }}
+                >
+                  <div className="flex gap-2">
+                    {[
+                      { label: 'Win Rate', value: p.winRate, color: '#0AC8B9' },
+                      { label: 'KDA',      value: p.kda,     color: '#C8A96E' },
+                      { label: 'Games',    value: p.games,   color: '#C8D0E0' },
+                    ].map(stat => (
+                      <div
+                        key={stat.label}
+                        className="text-center min-w-[116px] px-4 py-3 rounded-sm"
+                        style={{
+                          background: 'linear-gradient(180deg, rgba(10,20,38,0.95) 0%, rgba(6,15,30,0.9) 100%)',
+                          border: '1px solid rgba(200,169,110,0.22)',
+                          boxShadow: 'inset 0 1px 0 rgba(200,169,110,0.1)',
+                        }}
+                      >
+                        <p className="font-mono text-[11px] tracking-[0.16em] uppercase mb-1"
+                           style={{ color: '#8190aa' }}>
+                          {stat.label}
+                        </p>
+                        <p
+                          className="font-cinzel font-black leading-none"
+                          style={{
+                            color: stat.color,
+                            fontSize: 'clamp(26px, 2.5vw, 36px)',
+                            textShadow: '0 0 12px rgba(2,9,21,0.55)',
+                          }}
+                        >
+                          {stat.value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
 
-                <div className="flex gap-1 mt-1.5 justify-end">
-                  {p.champions.map(c => (
-                    <span
-                      key={c}
-                      className="font-mono text-[8px] px-2 py-1"
-                      style={{
-                        color: '#7a5f38',
-                        background: 'rgba(200,169,110,0.07)',
-                        border: '1px solid rgba(200,169,110,0.13)',
-                      }}
-                    >
-                      {c}
-                    </span>
-                  ))}
+                  <div className="flex flex-wrap gap-2 mt-2.5 justify-end">
+                    {p.champions.map(c => (
+                      <div
+                        key={c}
+                        className="inline-flex items-center rounded-sm overflow-hidden"
+                        style={{
+                          background: 'rgba(200,169,110,0.08)',
+                          border: '1px solid rgba(200,169,110,0.16)',
+                        }}
+                      >
+                        <img
+                          src={getChampionIconUrl(c)}
+                          alt={c}
+                          className="h-5 w-5 rounded-[3px] object-cover"
+                          loading="lazy"
+                        />
+                        <span
+                          className="font-mono text-[11px] px-2.5 py-1"
+                          style={{ color: '#c8a96e' }}
+                        >
+                          {c}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

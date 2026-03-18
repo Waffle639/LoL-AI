@@ -2,6 +2,7 @@ import { useScrollReveal } from '../hooks'
 
 export default function Scene({ id, imageSrc, textSide = 'right', label, title, body, tags = [], cta }) {
   const { ref, visible } = useScrollReveal(0.12)
+  const isDraftSection = id === 'draft'
 
   const overlayStyle = textSide === 'right'
     ? { background: 'linear-gradient(90deg, rgba(2,9,21,0) 30%, rgba(2,9,21,0.92) 66%, rgba(2,9,21,1) 100%)' }
@@ -36,23 +37,37 @@ export default function Scene({ id, imageSrc, textSide = 'right', label, title, 
       />
 
       <div
-        className={`relative z-10 max-w-[390px] ${textSide === 'right' ? 'ml-auto pr-15' : 'pl-15'}`}
+        className={`relative z-10 max-w-[460px] ${textSide === 'right' ? 'ml-auto pr-15' : 'pl-15'}`}
         style={{ padding: textSide === 'right' ? '0 60px 0 0' : '0 0 0 60px' }}
       >
-        <div className="flex items-center gap-3 font-mono text-[9px] tracking-widest text-teal uppercase mb-3">
-          <span style={{ width: '22px', height: '1px', background: '#0AC8B9', display: 'inline-block' }} />
+        <div
+          className="flex items-center gap-3 font-mono text-[11px] tracking-widest uppercase mb-3"
+          style={{ color: isDraftSection ? '#C8A96E' : '#0AC8B9' }}
+        >
+          <span
+            style={{
+              width: '22px',
+              height: '1px',
+              background: isDraftSection ? '#C8A96E' : '#0AC8B9',
+              display: 'inline-block',
+            }}
+          />
           {label}
         </div>
 
         <h2
           className="font-cinzel font-bold text-gold uppercase tracking-wide leading-[1.02]"
-          style={{ fontSize: 'clamp(26px, 3.8vw, 52px)' }}
+          style={{ fontSize: 'clamp(32px, 4.4vw, 62px)' }}
           dangerouslySetInnerHTML={{ __html: title }}
         />
 
         <p
-          className="font-exo font-light text-[rgba(138,149,176,0.85)] mt-3 leading-relaxed"
-          style={{ fontSize: '14px', maxWidth: '310px' }}
+          className="font-exo font-light mt-3 leading-relaxed"
+          style={{
+            fontSize: '16px',
+            maxWidth: '360px',
+            color: isDraftSection ? 'rgba(200,169,110,0.92)' : 'rgba(138,149,176,0.85)',
+          }}
         >
           {body}
         </p>
@@ -62,7 +77,7 @@ export default function Scene({ id, imageSrc, textSide = 'right', label, title, 
             {tags.map(tag => (
               <span
                 key={tag}
-                className="font-mono text-[9px] tracking-widest text-gold px-2.5 py-1"
+                className="font-mono text-[10px] tracking-widest text-gold px-2.5 py-1"
                 style={{
                   background: 'rgba(200,169,110,0.06)',
                   border: '1px solid rgba(200,169,110,0.18)',
@@ -79,16 +94,21 @@ export default function Scene({ id, imageSrc, textSide = 'right', label, title, 
             <a
               href={cta.href}
               className={`
-                font-rajdhani text-[12px] font-bold tracking-widest uppercase
-                px-8 py-3 clip-skew-sm no-underline inline-block transition-all
+                font-rajdhani text-[13px] font-bold tracking-widest uppercase
+                px-9 py-3.5 clip-skew-sm no-underline inline-block transition-all
                 ${cta.variant === 'gold'
                   ? 'text-[#050300] hover:brightness-110'
-                  : 'text-[#8a95b0] hover:border-gold-dim hover:text-gold'
+                  : isDraftSection
+                    ? 'text-gold hover:brightness-110'
+                    : 'text-[#8a95b0] hover:border-gold-dim hover:text-gold'
                 }
               `}
               style={cta.variant === 'gold'
                 ? { background: 'linear-gradient(135deg, #D4B483, #7a5f38)' }
-                : { border: '1px solid rgba(200,169,110,0.38)' }
+                : {
+                    border: '1px solid rgba(200,169,110,0.38)',
+                    background: isDraftSection ? 'rgba(200,169,110,0.05)' : 'transparent',
+                  }
               }
               data-cursor-hover
             >

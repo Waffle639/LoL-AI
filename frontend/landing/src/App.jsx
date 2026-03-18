@@ -12,7 +12,7 @@ const DRAFT_SCENE = {
   imageSrc: '/images/minimapa.png',
   textSide: 'right',
   label: 'Pre-Game',
-  title: 'Know who wins<br/>before <span class="text-stroke-gold" style="color:transparent;">first blood</span>',
+  title: 'Know who wins<br/>before first blood',
   body: 'Random Forest trained on 12,276 professional matches. Input both drafts, get win probability before the game begins.',
   tags: ['76.75% accuracy', 'ROC-AUC 0.895', 'RF v1.0'],
   cta: { href: '#pricing', label: 'Try Pre-Game', variant: 'ghost' },

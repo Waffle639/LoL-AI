@@ -10,7 +10,7 @@ export default function Hero() {
 
   const draftProgress  = Math.max(0, Math.min(1, (progress - 0.04) / 0.76))
   const textOpacity    = Math.max(0, 1 - (progress / 0.15) * 2)
-  const revealProgress = Math.max(0, Math.min(1, (progress - 0.8) / 0.14))
+  const revealProgress = Math.max(0, Math.min(1, (progress - 0.92) / 0.08))
 
   return (
     <div ref={wrapperRef} style={{ height: '300vh', position: 'relative' }}>
@@ -42,15 +42,15 @@ export default function Hero() {
           className="absolute inset-0 z-10 pointer-events-none"
           style={{
             display: 'grid',
-            gridTemplateColumns: '280px 1fr 280px',
+            gridTemplateColumns: '240px 1fr 240px',
             alignItems: 'center',
-            padding: '80px 52px 60px',
+            padding: '80px clamp(28px, 4.2vw, 72px) 60px',
             opacity: textOpacity,
           }}
         >
-          <div>
+          <div style={{ justifySelf: 'start' }}>
             <div
-              className="inline-block font-mono text-[9px] tracking-widest text-teal uppercase mb-5 px-3 py-1"
+              className="inline-block font-mono text-[11px] tracking-widest text-teal uppercase mb-5 px-3 py-1"
               style={{ border: '1px solid rgba(10,200,185,0.3)' }}
             >
               Prediction Engine · AI
@@ -78,9 +78,7 @@ export default function Hero() {
 
           <div />
 
-          <div
-            className="flex flex-col items-end pointer-events-auto"
-          >
+          <div className="flex flex-col items-end pointer-events-auto" style={{ justifySelf: 'end' }}>
             <div
               className="mb-5"
               style={{
@@ -91,7 +89,7 @@ export default function Hero() {
             />
             <p
               className="font-exo font-light text-[rgba(200,208,224,0.88)] text-right text-shadow-soft mb-6"
-              style={{ fontSize: 'clamp(14px, 1.5vw, 16px)', lineHeight: '1.7', maxWidth: '260px' }}
+              style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', lineHeight: '1.7', maxWidth: '320px' }}
             >
               Real-time win probability for professional League of Legends.
               Neural network + random forest. Two models, one verdict.
@@ -99,7 +97,7 @@ export default function Hero() {
             <div className="flex flex-col items-end gap-2">
               <a
                 href="#pricing"
-                className="font-cinzel text-[12px] font-bold tracking-widest text-[#050300] uppercase
+                className="font-cinzel text-[13px] font-bold tracking-widest text-[#050300] uppercase
                            px-11 py-4 clip-skew no-underline inline-block
                            transition-all hover:brightness-110 hover:-translate-y-0.5"
                 style={{ background: 'linear-gradient(135deg, #D4B483, #7a5f38)' }}
@@ -109,7 +107,7 @@ export default function Hero() {
               </a>
               <a
                 href="#draft"
-                className="font-rajdhani text-[12px] font-bold tracking-widest text-[#8a95b0] uppercase
+                className="font-rajdhani text-[13px] font-bold tracking-widest text-[#C8A96E] uppercase
                            px-8 py-3 clip-skew-sm no-underline inline-block
                            transition-all hover:border-gold-dim hover:text-gold"
                 style={{ border: '1px solid rgba(200,169,110,0.38)' }}
@@ -123,10 +121,17 @@ export default function Hero() {
 
         <div
           className="absolute inset-0 z-[12] flex flex-col items-center justify-end pointer-events-none"
-          style={{ paddingBottom: '64px', opacity: revealProgress }}
+          style={{ paddingBottom: '44px', opacity: revealProgress }}
         >
+          <div
+            className="absolute inset-x-0 bottom-0"
+            style={{
+              height: '38vh',
+              background: 'linear-gradient(180deg, rgba(2,9,21,0) 0%, rgba(2,9,21,0.72) 62%, rgba(2,9,21,0.92) 100%)',
+            }}
+          />
           <div className="text-center pointer-events-auto">
-            <p className="font-mono text-[9px] tracking-widest text-teal uppercase mb-3 text-shadow-soft">
+            <p className="font-mono text-[11px] tracking-widest text-teal uppercase mb-3 text-shadow-soft">
               Worlds 2024 &nbsp;·&nbsp; AI Prediction
             </p>
             <h2
@@ -135,14 +140,14 @@ export default function Hero() {
             >
               T1 wins. 82.4%.
             </h2>
-            <p className="font-exo font-light text-[#8a95b0] mt-2 text-shadow-soft"
-               style={{ fontSize: 'clamp(13px, 1.4vw, 15px)' }}>
+            <p className="font-exo font-light text-[#C8A96E] mt-2 text-shadow-soft"
+              style={{ fontSize: 'clamp(15px, 1.6vw, 18px)' }}>
               Draft analyzed before first blood.
             </p>
             <div className="flex items-center justify-center gap-3 mt-5">
               <a
                 href="#pricing"
-                className="font-cinzel text-[11px] font-bold tracking-widest text-[#050300] uppercase
+                className="font-cinzel text-[12px] font-bold tracking-widest text-[#050300] uppercase
                            px-10 py-3 clip-skew no-underline inline-block
                            transition-all hover:brightness-110"
                 style={{ background: 'linear-gradient(135deg, #D4B483, #7a5f38)' }}
@@ -152,7 +157,7 @@ export default function Hero() {
               </a>
               <a
                 href="#draft"
-                className="font-rajdhani text-[11px] font-bold tracking-widest text-[#8a95b0] uppercase
+                className="font-rajdhani text-[12px] font-bold tracking-widest text-[#C8A96E] uppercase
                            px-7 py-3 clip-skew-sm no-underline inline-block
                            transition-all hover:border-gold-dim hover:text-gold"
                 style={{ border: '1px solid rgba(200,169,110,0.38)' }}
@@ -169,8 +174,8 @@ export default function Hero() {
                      flex flex-col items-center gap-1.5"
           style={{ opacity: Math.max(0, 0.4 - progress * 3) }}
         >
-          <span className="font-mono text-[8px] tracking-widest text-shadow-soft"
-                style={{ color: 'rgba(200,169,110,0.3)' }}>
+              <span className="font-mono text-[10px] tracking-widest text-shadow-soft"
+                style={{ color: 'rgba(200,169,110,0.55)' }}>
             Scroll
           </span>
           <div
