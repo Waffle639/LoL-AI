@@ -12,8 +12,25 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime, timezone
 import os
+from pathlib import Path
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./lol_api.db")
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+
+
+def resolve_database_url() -> str:
+    """Resolve sqlite relative paths against backend root (stable across CWDs)."""
+    db_url = os.getenv("DATABASE_URL", "sqlite:///./lol_api.db")
+
+    if db_url.startswith("sqlite:///") and not db_url.startswith("sqlite:////"):
+        rel_path = db_url.replace("sqlite:///", "", 1)
+        if rel_path.startswith("./"):
+            rel_path = rel_path[2:]
+        return f"sqlite:///{(BACKEND_ROOT / rel_path).resolve()}"
+
+    return db_url
+
+
+DATABASE_URL = resolve_database_url()
 
 engine = create_engine(
     DATABASE_URL,

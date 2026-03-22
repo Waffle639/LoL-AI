@@ -64,3 +64,6 @@ frontend/dashboard/.env
 backend/__pycache__
 backend/.env
 backend/lol.db
+
+
+.run/

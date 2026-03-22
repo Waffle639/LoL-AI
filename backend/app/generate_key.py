@@ -67,7 +67,7 @@ def add_credits(key_prefix, credits):
     db.add(CreditTransaction(api_key=k.key, amount=credits, description="Créditos añadidos manualmente"))
     db.commit()
     db.close()
-    print(f"✅ +{credits} créditos a '{k.name}'. Total: {k.credits}")
+    print(f" +{credits} créditos a '{k.name}'. Total: {k.credits}")
 
 
 if __name__ == "__main__":

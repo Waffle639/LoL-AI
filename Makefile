@@ -27,28 +27,33 @@ $(VENV):
 # ===================== MANDATORY TARGETS =====================
 
 help:
-	@echo "Mandatory targets:"
+	@echo "Available targets:"
 	@echo "  make setup             Create venv and install dependencies (incl. PyTorch CPU)"
-	@echo "  make dvc               Configure DVC remote credentials and pull data/models"
+	@echo "  make dvc               Configure DVC credentials and pull tracked files"
 	@echo "  make test              Run pytest tests"
 	@echo "  make docker-build      Build Docker image"
-	@echo "  make docker-up         Start the service"
-	@echo "  make docker-down       Stop the service"
-	@echo "  make health            Check service health"
-	@echo "  make predict           Post-game prediction (Neural Net, requires API key)"
-	@echo "  make predict-pregame   Pre-game prediction: G2 vs MAD Lions (requires API key)"
-	@echo ""
-	@echo "Optional targets:"
-	@echo "  make dev               Run API locally (uvicorn with hot-reload)"
-	@echo "  make start-api         Start backend API in dev mode"
+	@echo "  make docker-up         Start service with Docker Compose"
+	@echo "  make docker-down       Stop Docker Compose services"
+	@echo "  make docker-test       Build test image and run backend tests in Docker"
+	@echo "  make health            Check /health endpoint"
+	@echo "  make predict           Post-game prediction request"
+	@echo "  make predict-pregame   Pre-game prediction request"
+	@echo "  make start-api         Run API locally with hot reload"
 	@echo "  make start-landing     Start landing app (Vite)"
 	@echo "  make start-dashboard   Start dashboard app (Vite)"
-	@echo "  make start-all         Start API + landing + dashboard together"
-	@echo "  make stop-all          Stop all services started by start-all"
-	@echo "  make pipeline          Run data pipeline"
-	@echo "  make train             Train models"
-	@echo "  make logs              Tail Docker service logs"
-	@echo "  make clean             Clean generated files"
+	@echo "  make start-all         Start API + landing + dashboard"
+	@echo "  make stop-all          Stop processes started by start-all"
+	@echo "  make pipeline          Run ML data pipeline"
+	@echo "  make train             Train ML models"
+	@echo "  make logs              Tail Docker API logs"
+	@echo "  make clean             Remove generated/cached files"
+	@echo ""
+	@echo "Common options (override as needed):"
+	@echo "  PORT=8000              API port (default from .env, fallback 8000)"
+	@echo "  API_KEY=<key>          Required for predict and predict-pregame"
+	@echo "  PYTEST_OPTS='...'      Extra pytest flags (used by test and docker-test)"
+	@echo "  DAGSHUB_USER=<user>    DVC remote username (for make dvc)"
+	@echo "  DAGSHUB_TOKEN=<token>  DVC remote token (for make dvc)"
 
 setup:
 	python3 -m venv $(VENV)
@@ -107,15 +112,28 @@ health:
 #   make predict API_KEY=your-key-here
 # ---------------------------------------------------------------------------
 predict:
-	@set -o pipefail; curl -sf -X POST http://localhost:$(PORT)/predict \
+	@test -n "$(API_KEY)" || (echo "ERROR: API_KEY is empty. Set it in .env or run: make predict API_KEY=<key>" && exit 1)
+	@tmp_file="$$(mktemp)"; \
+	status="$$(curl -sS -o "$$tmp_file" -w "%{http_code}" -X POST http://localhost:$(PORT)/predict \
 	 -H "Content-Type: application/json" \
 	 -H "X-API-Key: $(API_KEY)" \
-	 -d '{"team_encoded":"G2 Esports","player_encoded":"Caps","champion_encoded":"Azir","side_encoded":"Blue","position_encoded":"mid","team_winrate":0.65,"player_winrate":0.62,"player_kda":3.8,"champion_winrate":0.54,"player_champ_winrate":0.70,"kills":5,"deaths":2,"assists":8,"teamkills":24,"teamdeaths":10,"dragons":3,"opp_dragons":1,"elders":1,"opp_elders":0,"barons":2,"opp_barons":0,"towers":9,"opp_towers":3,"totalgold":14800}' \
-	 | python3 -m json.tool || \
-	 (echo "ERROR: Prediction failed. Is the service running? Does API_KEY have credits?" && exit 1)
+	 -d '{"team_encoded":"G2 Esports","player_encoded":"Caps","champion_encoded":"Azir","side_encoded":"Blue","position_encoded":"mid","team_winrate":0.65,"player_winrate":0.62,"player_kda":3.8,"champion_winrate":0.54,"player_champ_winrate":0.70,"kills":5,"deaths":2,"assists":8,"teamkills":24,"teamdeaths":10,"dragons":3,"opp_dragons":1,"elders":1,"opp_elders":0,"barons":2,"opp_barons":0,"towers":9,"opp_towers":3,"totalgold":14800}')" || { \
+		echo "ERROR: Could not connect to API at http://localhost:$(PORT). Is the service running?"; \
+		rm -f "$$tmp_file"; \
+		exit 1; \
+	}; \
+	python3 -m json.tool < "$$tmp_file" 2>/dev/null || cat "$$tmp_file"; \
+	if [ "$$status" -lt 200 ] || [ "$$status" -ge 300 ]; then \
+		echo "ERROR: Prediction request failed with HTTP $$status."; \
+		rm -f "$$tmp_file"; \
+		exit 1; \
+	fi; \
+	rm -f "$$tmp_file"
 
 predict-pregame:
-	@set -o pipefail; curl -sf -X POST http://localhost:$(PORT)/predict/pregame \
+	@test -n "$(API_KEY)" || (echo "ERROR: API_KEY is empty. Set it in .env or run: make predict-pregame API_KEY=<key>" && exit 1)
+	@tmp_file="$$(mktemp)"; \
+	status="$$(curl -sS -o "$$tmp_file" -w "%{http_code}" -X POST http://localhost:$(PORT)/predict/pregame \
 	 -H "Content-Type: application/json" \
 	 -H "X-API-Key: $(API_KEY)" \
 	 -d '{ \
@@ -141,16 +159,30 @@ predict-pregame:
 	       {"player": "Alvaro",    "champion": "Renata Glasc", "position": "sup"} \
 	     ] \
 	   } \
-	 }' \
-	 | python3 -m json.tool || \
-	 (echo "ERROR: Pre-game prediction failed. Is the service running? Does API_KEY have credits?" && exit 1)
+	 }')" || { \
+		echo "ERROR: Could not connect to API at http://localhost:$(PORT). Is the service running?"; \
+		rm -f "$$tmp_file"; \
+		exit 1; \
+	}; \
+	python3 -m json.tool < "$$tmp_file" 2>/dev/null || cat "$$tmp_file"; \
+	if [ "$$status" -lt 200 ] || [ "$$status" -ge 300 ]; then \
+		echo "ERROR: Pre-game prediction failed with HTTP $$status."; \
+		rm -f "$$tmp_file"; \
+		exit 1; \
+	fi; \
+	rm -f "$$tmp_file"
 
 # ===================== OPTIONAL TARGETS =====================
 
-dev: $(VENV)
+start-api: $(VENV)
+	@occupied_info="$$(ss -ltnp 2>/dev/null | awk '$$4 ~ /:$(PORT)$$/ {print $$0}' | head -n1)"; \
+	if [ -n "$$occupied_info" ]; then \
+		echo "Port $(PORT) is already in use:"; \
+		echo "$$occupied_info"; \
+		echo "Stop that process or run on another port: make start-api PORT=8001"; \
+		exit 1; \
+	fi; \
 	cd backend && ../$(VENV)/bin/uvicorn app.api:app --reload --host 0.0.0.0 --port $(PORT)
-
-start-api: dev
 
 start-landing:
 	cd frontend/landing && npm run dev
