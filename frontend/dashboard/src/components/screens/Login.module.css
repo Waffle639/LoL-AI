@@ -1,0 +1,178 @@
+.wrap {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Left panel ── */
+.left {
+  background: #07080d;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 60px 52px;
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.logoMark  { margin-bottom: 36px; }
+
+.productLabel {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--txt-d);
+  margin-bottom: 10px;
+}
+
+.title {
+  font-family: 'Cinzel', serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #fff;
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+
+.sub {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 13px;
+  color: rgba(200, 208, 224, 0.45);
+  margin-bottom: 32px;
+  font-weight: 300;
+  line-height: 1.6;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 28px;
+}
+.tab {
+  padding: 10px 0;
+  margin-right: 28px;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(200, 208, 224, 0.4);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.18s;
+  position: relative;
+  bottom: -1px;
+}
+.tab:hover { color: rgba(200, 208, 224, 0.75); }
+.tabActive  { color: #fff !important; border-bottom-color: var(--gold) !important; }
+
+/* Submit */
+.submit {
+  width: 100%;
+  background: var(--gold);
+  color: #0a0600;
+  border: none;
+  padding: 14px;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s;
+  margin-top: 8px;
+}
+.submit:hover { background: var(--gold-b); }
+
+/* Footer */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+  color: var(--txt-d);
+}
+.link {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+  color: rgba(200, 208, 224, 0.35);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.link:hover { color: var(--gold); }
+
+/* ── Right panel ── */
+.right {
+  position: relative;
+  overflow: hidden;
+  background: #020915;
+}
+
+.rightBg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center center;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(7, 8, 13, 0.92) 0%,
+    rgba(7, 8, 13, 0.45) 30%,
+    rgba(2, 9, 21, 0.1)  60%,
+    rgba(2, 9, 21, 0.3)  100%
+  );
+  z-index: 1;
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background-image:
+    linear-gradient(rgba(10, 200, 185, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10, 200, 185, 0.03) 1px, transparent 1px);
+  background-size: 64px 64px;
+  pointer-events: none;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(55px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lines {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}

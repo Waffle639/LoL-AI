@@ -1,0 +1,46 @@
+.group { margin-bottom: 16px; }
+
+.label {
+  display: block;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--txt-d);
+  margin-bottom: 6px;
+}
+
+/* Default variant */
+.default .input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  font-family: 'Exo 2', sans-serif;
+  font-size: 13px;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.default .input:focus { border-color: var(--gold-d); }
+.default .input::placeholder { color: var(--txt-d); }
+
+/* Riot variant — bottom border only */
+.riot .label {
+  color: rgba(200, 208, 224, 0.4);
+}
+.riot .input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 15px;
+  padding: 8px 0;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.riot .input:focus { border-bottom-color: var(--gold); }
+.riot .input::placeholder { color: rgba(255, 255, 255, 0.18); }

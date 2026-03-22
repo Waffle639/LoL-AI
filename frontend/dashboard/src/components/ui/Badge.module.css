@@ -1,0 +1,14 @@
+.badge {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.gold  { color: var(--gold);  background: rgba(200, 169, 110, 0.12); }
+.teal  { color: var(--teal);  background: rgba(10,  200, 185, 0.10); }
+.green { color: var(--green); background: rgba(46,  204, 113, 0.10); }
+.red   { color: var(--red);   background: rgba(200, 48,  32,  0.10); }

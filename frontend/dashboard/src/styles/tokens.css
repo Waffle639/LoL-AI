@@ -1,0 +1,69 @@
+/* ─────────────────────────────────────────────────────────────────
+   DESIGN TOKENS & GLOBAL STYLES
+   All CSS variables live here. Import this once in main.jsx.
+───────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Palette */
+  --gold:     #C8A96E;
+  --gold-b:   #D4B483;
+  --gold-d:   #7a5f38;
+  --gold-dk:  #2a1e08;
+  --teal:     #0AC8B9;
+  --teal-d:   #0a4a45;
+  --red:      #C83020;
+  --green:    #2ecc71;
+
+  /* Backgrounds */
+  --bg:   #020915;
+  --bg2:  #060f1e;
+  --bg3:  #0b1628;
+  --bg4:  #101e35;
+  --bg5:  #162440;
+
+  /* Borders */
+  --bdr:    rgba(200, 169, 110, 0.18);
+  --bdr-hi: rgba(200, 169, 110, 0.45);
+
+  /* Text */
+  --txt:   #C8D0E0;
+  --txt-d: #5a6580;
+  --txt-m: #8a95b0;
+
+  /* Sidebar widths */
+  --sb-w:   220px;
+  --sb-w-c: 56px;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { font-size: 16px; }
+
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--gold-d); }
+
+/* ── Typography helpers ── */
+.font-cinzel  { font-family: 'Cinzel', serif; }
+.font-rajdhani{ font-family: 'Rajdhani', sans-serif; }
+.font-mono    { font-family: 'Share Tech Mono', monospace; }
+.font-exo     { font-family: 'Exo 2', sans-serif; }
+
+/* ── Utility ── */
+.text-gold  { color: var(--gold); }
+.text-teal  { color: var(--teal); }
+.text-red   { color: var(--red); }
+.text-green { color: var(--green); }
+.text-dim   { color: var(--txt-d); }
+.text-mid   { color: var(--txt-m); }

@@ -1,0 +1,32 @@
+.statRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.chartRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* Table */
+.tableWrap  { background: var(--bg2); border: 1px solid var(--bdr); margin-bottom: 24px; }
+.tableHeader{ display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid var(--bdr); }
+.tableTitle { font-family: 'Exo 2', sans-serif; font-size: 13px; font-weight: 600; color: var(--txt); }
+.table      { width: 100%; border-collapse: collapse; }
+.table th   { font-family: 'Exo 2', sans-serif; font-size: 11px; font-weight: 600; color: var(--txt-d); text-align: left; padding: 9px 18px; border-bottom: 1px solid var(--bdr); }
+.table td   { padding: 12px 18px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,.03); font-family: 'Exo 2', sans-serif; color: var(--txt); }
+.table tr:last-child td { border-bottom: none; }
+.table tr:hover td { background: rgba(200,169,110,.025); }
+
+.win  { color: var(--green) !important; font-weight: 700; }
+.loss { color: var(--red)   !important; font-weight: 700; }
+.mono { font-family: 'Share Tech Mono', monospace; font-size: 11px; }
+
+.probRow  { display: flex; align-items: center; gap: 7px; }
+.probTrack{ height: 3px; background: var(--bg5); flex: 1; max-width: 70px; overflow: hidden; }
+.probFill { height: 100%; background: linear-gradient(90deg, var(--teal), var(--gold)); }
+.probNum  { font-family: 'Share Tech Mono', monospace; font-size: 11px; }

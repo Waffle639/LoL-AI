@@ -1,0 +1,17 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+}
+
+.content {
+  flex: 1;
+  padding: 32px 36px;
+  overflow: auto;
+  min-width: 0;
+}

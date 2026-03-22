@@ -1,0 +1,58 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 36px;
+  height: 64px;
+  border-bottom: 1px solid var(--bdr);
+  background: var(--bg2);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.left  { display: flex; align-items: center; }
+.center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+.right { display: flex; align-items: center; gap: 16px; }
+
+.credits {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--bdr);
+  border-left: 2px solid var(--gold-d);
+  padding: 6px 14px;
+}
+.creditsNum {
+  font-family: 'Cinzel', serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+}
+.creditsLabel {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 8px;
+  color: var(--txt-d);
+  letter-spacing: 2px;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  background: var(--bg4);
+  border: 1px solid var(--bg5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--txt-m);
+}

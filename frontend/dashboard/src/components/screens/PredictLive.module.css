@@ -1,0 +1,59 @@
+.grid    { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.twoCol  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.threeCol{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; }
+
+.resultCard {
+  background: var(--bg2);
+  border: 1px solid var(--bdr);
+  padding: 24px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+
+.burst { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+
+.resultLabel {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: var(--txt-d);
+  letter-spacing: 4px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.resultTeam {
+  font-family: 'Cinzel', serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--teal);
+  margin-bottom: 8px;
+}
+
+.resultProb {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;
+  color: var(--gold);
+  margin-bottom: 18px;
+}
+
+.vsTrack  { display: flex; height: 5px; max-width: 340px; margin: 0 auto 8px; }
+.vsBlue   { background: linear-gradient(90deg, var(--teal), rgba(10,200,185,.4)); }
+.vsRed    { background: linear-gradient(90deg, rgba(200,48,32,.4), var(--red)); }
+
+.vsLabels {
+  display: flex;
+  justify-content: space-between;
+  max-width: 340px;
+  margin: 0 auto;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+}
+
+.chips   { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+.chip    { background: var(--bg3); border: 1px solid var(--bdr); padding: 9px 16px; text-align: center; }
+.chipLabel{ font-family: 'Share Tech Mono', monospace; font-size: 8px; color: var(--txt-d); letter-spacing: 2px; margin-bottom: 3px; }
+.chipVal  { font-family: 'Cinzel', serif; font-weight: 700; color: var(--txt); font-size: 12px; }
+
+.actions { display: flex; gap: 10px; margin-top: 14px; }

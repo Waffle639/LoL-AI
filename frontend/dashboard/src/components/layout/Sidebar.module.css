@@ -1,0 +1,126 @@
+.sidebar {
+  width: var(--sb-w);
+  flex-shrink: 0;
+  border-right: 1px solid var(--bdr);
+  background: linear-gradient(180deg, var(--bg2), var(--bg));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: calc(100vh - 64px - 48px);
+}
+
+.inner {
+  padding: 20px 0 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.section {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--txt-d);
+  padding: 0 18px 8px;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+  text-transform: uppercase;
+}
+
+.gap { height: 12px; }
+
+.item {
+  display: flex;
+  align-items: center;
+  height: 46px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  color: var(--txt-d);
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  position: relative;
+}
+.item:hover { background: rgba(200, 169, 110, 0.05); color: var(--txt); }
+.active { color: var(--gold) !important; border-left-color: var(--gold) !important; background: rgba(200, 169, 110, 0.07) !important; }
+
+.ico {
+  width: 56px;
+  height: 46px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ico svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+  transition: transform 0.15s;
+  opacity: 0.65;
+}
+.item:hover .ico svg { opacity: 0.9; transform: scale(1.1); }
+.active .ico svg {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px rgba(200, 169, 110, 0.5));
+}
+
+.label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  flex: 1;
+  padding-right: 14px;
+  transition: opacity 0.2s, transform 0.2s;
+  text-transform: uppercase;
+}
+
+.tooltip {
+  position: absolute;
+  left: 62px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg3);
+  border: 1px solid var(--bdr);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 5px 10px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 200;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  border-top: 1px solid var(--bdr);
+  flex-shrink: 0;
+  cursor: pointer;
+  background: transparent;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  width: 100%;
+  transition: background 0.15s;
+}
+.toggle:hover { background: rgba(200, 169, 110, 0.04); }
+.toggle svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Collapsed state — applied via global class .col on the element */
+:global(.col) .section { opacity: 0; }
+:global(.col) .label   { opacity: 0; transform: translateX(-6px); pointer-events: none; }
+:global(.col) .toggle svg { transform: rotate(180deg); }
+:global(.col) .item:hover .tooltip { opacity: 1; }

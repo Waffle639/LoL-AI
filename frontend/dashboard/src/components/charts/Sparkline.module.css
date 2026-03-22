@@ -1,0 +1,11 @@
+.wrap { width: 100%; }
+
+.xLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3px;
+  padding: 0 2px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 7px;
+  color: var(--txt-d);
+}

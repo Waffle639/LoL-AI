@@ -1,0 +1,42 @@
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--bdr);
+  border-left-width: 3px;
+  padding: 18px 20px;
+  position: relative;
+}
+
+.gold  { border-left-color: var(--gold); }
+.teal  { border-left-color: var(--teal); }
+.red   { border-left-color: var(--red); }
+.green { border-left-color: var(--green); }
+
+.label {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 11px;
+  color: var(--txt-d);
+  margin-bottom: 6px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+}
+
+.value {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--txt);
+  line-height: 1;
+}
+.gold  .value { color: var(--gold); }
+.teal  .value { color: var(--teal); }
+.red   .value { color: var(--red); }
+.green .value { color: var(--green); }
+
+.trend {
+  font-size: 10px;
+  margin-top: 4px;
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--txt-d);
+}
+.up { color: var(--green); }
+.dn { color: var(--red); }

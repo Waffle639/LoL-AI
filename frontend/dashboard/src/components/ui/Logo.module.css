@@ -1,0 +1,50 @@
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mark {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.img {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 7px rgba(26, 120, 194, 0.4));
+}
+
+.fallback {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #020d1a, #001830);
+  border: 1.5px solid #1a3a6a;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  align-items: center;
+  justify-content: center;
+}
+
+.name {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--txt);
+}
+
+.sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 8px;
+  color: var(--txt-d);
+  letter-spacing: 3px;
+  margin-top: 1px;
+}
+
+/* Size variants */
+.sm .img  { height: 24px; }
+.sm .name { font-size: 12px; }
+
+.lg .img  { height: 48px; }
+.lg .name { font-size: 20px; }

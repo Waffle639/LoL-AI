@@ -1,0 +1,18 @@
+.wrap   { display: flex; align-items: center; gap: 20px; }
+.donut  { position: relative; width: 120px; height: 120px; flex-shrink: 0; }
+
+.center {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+.centerVal   { font-family: 'Cinzel', serif; font-size: 20px; font-weight: 700; color: var(--gold); }
+.centerLabel { font-family: 'Share Tech Mono', monospace; font-size: 7px; color: var(--txt-d); letter-spacing: 2px; }
+
+.legend { flex: 1; }
+.legendRow  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.dot        { width: 7px; height: 7px; border-radius: 50%; margin-right: 8px; flex-shrink: 0; }
+.legendLabel{ font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--txt-m); letter-spacing: 1px; flex: 1; }
+.legendVal  { font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; }

@@ -1,0 +1,41 @@
+.btn {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 10px 22px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Variants */
+.gold {
+  background: var(--gold);
+  color: #0a0600;
+  border-left: 3px solid var(--gold-b);
+}
+.gold:hover:not(:disabled) { background: var(--gold-b); }
+
+.ghost {
+  background: transparent;
+  border: 1px solid var(--bdr);
+  color: var(--txt-m);
+}
+.ghost:hover:not(:disabled) { border-color: var(--gold-d); color: var(--gold); }
+
+.red {
+  background: transparent;
+  border: 1px solid #5e1a15;
+  color: var(--red);
+}
+.red:hover:not(:disabled) { background: rgba(200, 48, 32, 0.08); }
+
+/* Sizes */
+.sm { padding: 5px 13px; font-size: 10px; letter-spacing: 1.5px; }
+
+/* Modifier */
+.full { width: 100%; text-align: center; }

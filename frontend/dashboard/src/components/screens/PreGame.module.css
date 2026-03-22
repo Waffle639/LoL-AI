@@ -1,0 +1,170 @@
+.layout {
+  display: grid;
+  grid-template-columns: 200px 1fr 200px;
+  min-height: calc(100vh - 64px);
+}
+
+/* ── Team panels ── */
+.teamPanel {
+  background: var(--bg2);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--bdr);
+}
+.teamRight { border-right: none; border-left: 1px solid var(--bdr); }
+
+.teamHeader {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--gold);
+  text-transform: uppercase;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--bdr);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.side { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: var(--txt-d); margin-left: auto; }
+
+.dot  { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.blue { background: var(--teal); box-shadow: 0 0 5px var(--teal); }
+.red  { background: var(--red);  box-shadow: 0 0 5px var(--red);  }
+
+/* Slots */
+.slot {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(200,169,110,.05);
+  transition: background .15s;
+  cursor: pointer;
+  position: relative;
+}
+.slot:hover { background: rgba(200,169,110,.04); }
+.picking      { background: rgba(200,169,110,.06) !important; border-left: 2px solid var(--gold); }
+.pickingEnemy { background: rgba(200,48,32,.06) !important;   border-left: 2px solid var(--red); }
+.slotRight    { flex-direction: row-reverse; }
+
+.portrait {
+  width: 60px; height: 60px; flex-shrink: 0;
+  background: var(--bg4);
+  display: flex; align-items: center; justify-content: center;
+}
+.portrait svg { width: 24px; height: 24px; }
+
+.slotInfo   { padding: 7px 12px; flex: 1; }
+.slotPos    { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: var(--txt-d); letter-spacing: 2px; margin-bottom: 2px; }
+.slotPlayer { font-family: 'Cinzel', serif; font-size: 11px; font-weight: 700; color: var(--txt); margin-bottom: 1px; }
+.slotChamp  { font-family: 'Exo 2', sans-serif; font-size: 11px; color: var(--gold); }
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+.blinking    { color: var(--txt-d) !important; animation: blink 1.2s infinite; }
+.blinkingRed { color: var(--red)   !important; animation: blink 1.2s infinite; }
+
+/* Prob area */
+.probArea  { padding: 14px 16px; border-top: 1px solid var(--bdr); margin-top: auto; }
+.probLabel { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: var(--txt-d); letter-spacing: 2px; margin-bottom: 5px; }
+.probVal   { font-family: 'Cinzel', serif; font-size: 26px; font-weight: 700; line-height: 1; }
+.probBar   { height: 3px; background: var(--bg5); margin-top: 7px; }
+.probFill  { height: 100%; }
+
+/* ── Center ── */
+.center { display: flex; flex-direction: column; }
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bdr);
+  background: var(--bg2);
+  flex-wrap: wrap;
+}
+.roleBtn {
+  background: var(--bg3);
+  border: 1px solid var(--bdr);
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: var(--txt-d);
+  letter-spacing: 1px;
+  transition: all .15s;
+}
+.roleBtn:hover, .roleBtnActive {
+  border-color: var(--gold-d);
+  color: var(--gold);
+  background: rgba(200,169,110,.07);
+}
+.search {
+  margin-left: auto;
+  background: var(--bg3);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  font-family: 'Exo 2', sans-serif;
+  font-size: 11px;
+  padding: 5px 10px;
+  outline: none;
+  width: 140px;
+}
+.search:focus   { border-color: var(--gold-d); }
+.search::placeholder { color: var(--txt-d); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+  padding: 10px;
+  overflow-y: auto;
+  flex: 1;
+  background: var(--bg);
+}
+.champCell {
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1;
+}
+.champCell:hover { border: 1px solid var(--gold-d); transform: scale(1.04); z-index: 2; }
+.picked { opacity: .25; pointer-events: none; }
+.champBg   { width: 100%; height: 100%; }
+.champName {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,.85));
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 8px; font-weight: 600; letter-spacing: 1px;
+  color: var(--txt); padding: 7px 3px 2px;
+  text-align: center; text-transform: uppercase;
+}
+
+.bottomBar {
+  background: var(--bg2);
+  border-top: 1px solid var(--bdr);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pickingInfo { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--txt-d); letter-spacing: 2px; }
+
+.timerRing { position: relative; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; }
+.timerRing svg { position: absolute; top: 0; left: 0; }
+.timerNum  { font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; position: relative; z-index: 1; }
+
+.lockWrap { background: var(--bg2); border-top: 1px solid var(--bdr); padding: 12px; text-align: center; }
+.lockBtn {
+  background: var(--gold); color: #0a0600;
+  font-family: 'Cinzel', serif; font-size: 12px; font-weight: 700;
+  letter-spacing: 3px; text-transform: uppercase;
+  padding: 11px 40px; border: none;
+  border-left: 3px solid var(--gold-b);
+  cursor: pointer; transition: all .18s;
+}
+.lockBtn:hover { background: var(--gold-b); }
+
+/* Topbar center */
+.pickerTitle { text-align: center; }
+.pickerName  { font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; }
+.pickerSub   { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--txt-d); letter-spacing: 2px; margin-top: 2px; }

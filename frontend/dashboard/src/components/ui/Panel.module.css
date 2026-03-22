@@ -1,0 +1,30 @@
+.panel {
+  background: var(--bg2);
+  border: 1px solid var(--bdr);
+  padding: 20px;
+  position: relative;
+}
+
+/* Top accent line */
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+}
+
+.accent-gold::before  { background: linear-gradient(90deg, var(--gold-d), transparent); }
+.accent-teal::before  { background: linear-gradient(90deg, var(--teal-d), transparent); }
+.accent-none::before  { display: none; }
+
+.title {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--txt-m);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
