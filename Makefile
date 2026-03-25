@@ -16,6 +16,8 @@ PYTEST_OPTS ?= -vv --color=yes --tb=short -r fEsxX --disable-warnings
 # PORT is read from .env (via -include above). This line is a safety fallback
 # only when PORT is not defined in .env at all.
 PORT ?= 8000
+LANDING_PORT ?= 5173
+DASHBOARD_PORT ?= 5174
 
 .DEFAULT_GOAL := help
 
@@ -50,6 +52,8 @@ help:
 	@echo ""
 	@echo "Common options (override as needed):"
 	@echo "  PORT=8000              API port (default from .env, fallback 8000)"
+	@echo "  LANDING_PORT=5173      Landing port (default from .env, fallback 5173)"
+	@echo "  DASHBOARD_PORT=5174    Dashboard port (default from .env, fallback 5174)"
 	@echo "  API_KEY=<key>          Required for predict and predict-pregame"
 	@echo "  PYTEST_OPTS='...'      Extra pytest flags (used by test and docker-test)"
 	@echo "  DAGSHUB_USER=<user>    DVC remote username (for make dvc)"
@@ -185,10 +189,10 @@ start-api: $(VENV)
 	cd backend && ../$(VENV)/bin/uvicorn app.api:app --reload --host 0.0.0.0 --port $(PORT)
 
 start-landing:
-	cd frontend/landing && npm run dev
+	cd frontend/landing && npm run dev -- --host 0.0.0.0 --port $(LANDING_PORT) --strictPort
 
 start-dashboard:
-	cd frontend/dashboard && npm run dev
+	cd frontend/dashboard && npm run dev -- --host 0.0.0.0 --port $(DASHBOARD_PORT) --strictPort
 
 start-all:
 	@set -e; \
@@ -202,10 +206,10 @@ start-all:
 	fi; \
 	: > "$$PID_FILE_PATH"; \
 	(cd "$$ROOT_DIR/backend" && nohup "$$ROOT_DIR/$(VENV)/bin/uvicorn" app.api:app --reload --host 0.0.0.0 --port $(PORT) > "$$LOG_DIR/api.dev.log" 2>&1 & echo $$! >> "$$PID_FILE_PATH"); \
-	(cd "$$ROOT_DIR/frontend/landing" && nohup npm run dev -- --host 0.0.0.0 > "$$LOG_DIR/landing.dev.log" 2>&1 & echo $$! >> "$$PID_FILE_PATH"); \
-	(cd "$$ROOT_DIR/frontend/dashboard" && nohup npm run dev -- --host 0.0.0.0 > "$$LOG_DIR/dashboard.dev.log" 2>&1 & echo $$! >> "$$PID_FILE_PATH"); \
+	(cd "$$ROOT_DIR/frontend/landing" && nohup npm run dev -- --host 0.0.0.0 --port $(LANDING_PORT) --strictPort > "$$LOG_DIR/landing.dev.log" 2>&1 & echo $$! >> "$$PID_FILE_PATH"); \
+	(cd "$$ROOT_DIR/frontend/dashboard" && nohup npm run dev -- --host 0.0.0.0 --port $(DASHBOARD_PORT) --strictPort > "$$LOG_DIR/dashboard.dev.log" 2>&1 & echo $$! >> "$$PID_FILE_PATH"); \
 	echo "Services started. PIDs:"; cat "$$PID_FILE_PATH"; \
-	echo "API: http://localhost:$(PORT) | Landing: http://localhost:5173 | Dashboard: http://localhost:5174"
+	echo "API: http://localhost:$(PORT) | Landing: http://localhost:$(LANDING_PORT) | Dashboard: http://localhost:$(DASHBOARD_PORT)"
 
 stop-all:
 	@set -e; \

@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import anime from 'animejs'
 import AppLayout from '@/components/layout/AppLayout'
 import Panel, { PanelTitle } from '@/components/ui/Panel'
 import FormField from '@/components/ui/FormField'
 import Button from '@/components/ui/Button'
+import { useApp } from '@/context/AppContext'
+import { ROUTES } from '@/constants/navigation'
 import styles from './Account.module.css'
 
 // ─────────────────────────────────────────────────────────────────
@@ -11,14 +14,19 @@ import styles from './Account.module.css'
 // Profile · API Key (hidden by default) · Danger zone
 // ─────────────────────────────────────────────────────────────────
 
-const REAL_KEY  = 'lol_k8Xm2pQzVnRjF9cLsYwTuA3bGhNdEiOe7'
-const MASKED_KEY = 'lol_k8••••••••••••••••••••••••••••••••'
+function maskApiKey(rawKey) {
+  if (!rawKey) return 'No disponible'
+  if (rawKey.length <= 12) return rawKey
+  return `${rawKey.slice(0, 8)}${'•'.repeat(Math.max(6, rawKey.length - 12))}${rawKey.slice(-4)}`
+}
 
 export default function Account() {
+  const navigate = useNavigate()
+  const { user, apiKey, logout } = useApp()
   const [keyVisible, setKeyVisible]   = useState(false)
   const [copied, setCopied]           = useState(false)
-  const [username, setUsername]       = useState('Waffle639')
-  const [email, setEmail]             = useState('waffle@example.com')
+  const [username, setUsername]       = useState(user.name)
+  const [email, setEmail]             = useState(user.email)
 
   useEffect(() => {
     anime({ targets: '#s-account .panel', opacity:[0,1], translateY:[16,0], delay: anime.stagger(90), duration:420, easing:'easeOutExpo' })
@@ -31,9 +39,15 @@ export default function Account() {
   }
 
   const copyKey = () => {
-    navigator.clipboard?.writeText(REAL_KEY)
+    if (!apiKey) return
+    navigator.clipboard?.writeText(apiKey)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
+  }
+
+  const handleLogout = () => {
+    logout()
+    navigate(ROUTES.LOGIN)
   }
 
   return (
@@ -67,7 +81,7 @@ export default function Account() {
           </p>
           <div className={styles.keyBox}>
             <span id="api-key-val" className={styles.keyVal}>
-              {keyVisible ? REAL_KEY : MASKED_KEY}
+              {keyVisible ? apiKey || 'No disponible' : maskApiKey(apiKey)}
             </span>
             <button className={styles.keyBtn} onClick={toggleKey}>
               {keyVisible ? 'HIDE' : 'SHOW'}
@@ -86,9 +100,9 @@ export default function Account() {
         <Panel className="panel" style={{ borderColor: 'rgba(200,48,32,.3)' }}>
           <PanelTitle style={{ color: 'var(--red)' }}>Danger Zone</PanelTitle>
           <p className={styles.dangerText}>
-            Permanently delete your account, all predictions, and remaining credits.
+            Cerrar sesion en este navegador y eliminar la API key almacenada localmente.
           </p>
-          <Button variant="red" size="sm">Delete Account</Button>
+          <Button variant="red" size="sm" onClick={handleLogout}>Logout</Button>
         </Panel>
       </div>
     </AppLayout>

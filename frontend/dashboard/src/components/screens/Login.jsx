@@ -4,6 +4,7 @@ import anime from 'animejs'
 import Logo from '@/components/ui/Logo'
 import FormField from '@/components/ui/FormField'
 import { ROUTES } from '@/constants/navigation'
+import { useApp } from '@/context/AppContext'
 import styles from './Login.module.css'
 import splashSrc from '@/assets/splash.jpg'
 
@@ -14,9 +15,14 @@ import splashSrc from '@/assets/splash.jpg'
 
 export default function Login() {
   const navigate = useNavigate()
+  const { loginClient, registerClient, authLoading } = useApp()
   const [tab, setTab]           = useState('signin')
   const [username, setUsername] = useState('')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   // Entry animations
   useEffect(() => {
@@ -48,9 +54,40 @@ export default function Login() {
     }
   }, [])
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault()
-    navigate(ROUTES.DASHBOARD)
+    setError('')
+    setSuccess('')
+
+    try {
+      if (tab === 'signin') {
+        await loginClient({ email, password })
+        navigate(ROUTES.DASHBOARD)
+        return
+      }
+
+      if (!username.trim()) {
+        throw new Error('El nombre de usuario es obligatorio')
+      }
+      if (password.length < 8) {
+        throw new Error('La contraseña debe tener al menos 8 caracteres')
+      }
+      if (password !== confirmPassword) {
+        throw new Error('Las contraseñas no coinciden')
+      }
+
+      await registerClient({ username, email, password })
+      setSuccess('Cuenta creada correctamente. Bienvenido a LoL-AI.')
+      navigate(ROUTES.DASHBOARD)
+    } catch (err) {
+      setError(err.message || 'No se pudo completar la autenticación')
+    }
+  }
+
+  const switchTab = nextTab => {
+    setTab(nextTab)
+    setError('')
+    setSuccess('')
   }
 
   return (
@@ -68,14 +105,33 @@ export default function Login() {
 
         {/* Tabs */}
         <div className={styles.tabs}>
-          <button className={`${styles.tab} ${tab === 'signin' ? styles.tabActive : ''}`} onClick={() => setTab('signin')}>Sign in</button>
-          <button className={`${styles.tab} ${tab === 'register' ? styles.tabActive : ''}`} onClick={() => setTab('register')}>Create account</button>
+          <button type="button" className={`${styles.tab} ${tab === 'signin' ? styles.tabActive : ''}`} onClick={() => switchTab('signin')}>Sign in</button>
+          <button type="button" className={`${styles.tab} ${tab === 'register' ? styles.tabActive : ''}`} onClick={() => switchTab('register')}>Create account</button>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <FormField label="Username" variant="riot" value={username} onChange={e => setUsername(e.target.value)} placeholder="Your summoner name" />
+          {tab === 'register' && (
+            <FormField label="Username" variant="riot" value={username} onChange={e => setUsername(e.target.value)} placeholder="Your summoner name" />
+          )}
+          <FormField label="Email" type="email" variant="riot" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
           <FormField label="Password" type="password" variant="riot" value={password} onChange={e => setPassword(e.target.value)} placeholder="Your password" />
-          <button type="submit" className={styles.submit}>Continue</button>
+          {tab === 'register' && (
+            <FormField
+              label="Confirm Password"
+              type="password"
+              variant="riot"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              placeholder="Repeat your password"
+            />
+          )}
+
+          {error && <div className={styles.error}>{error}</div>}
+          {success && <div className={styles.success}>{success}</div>}
+
+          <button type="submit" className={styles.submit} disabled={authLoading}>
+            {authLoading ? 'Processing...' : tab === 'signin' ? 'Continue' : 'Create account'}
+          </button>
         </form>
 
         <div className={styles.footer}>

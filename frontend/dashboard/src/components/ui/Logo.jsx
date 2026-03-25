@@ -11,7 +11,7 @@ export default function Logo({ size = 'md' }) {
     <div className={`${styles.logo} ${styles[size]}`}>
       <div className={styles.mark}>
         <img
-          src="/lol-esports-logo.png"
+          src="/LoL-Esports-Logo-PNG-SVG-Vector.png"
           alt="LoL-AI"
           className={styles.img}
           onError={e => {
@@ -37,11 +37,6 @@ export default function Logo({ size = 'md' }) {
             >AI</text>
           </svg>
         </div>
-      </div>
-
-      <div className={styles.text}>
-        <div className={styles.name}>LOL-AI</div>
-        <div className={styles.sub}>PREDICTION ENGINE</div>
       </div>
     </div>
   )

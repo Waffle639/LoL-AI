@@ -96,6 +96,21 @@
   margin-top: 8px;
 }
 .submit:hover { background: var(--gold-b); }
+.submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.error {
+  margin: 10px 0 6px;
+  color: #ff9b90;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+}
+
+.success {
+  margin: 10px 0 6px;
+  color: var(--gold);
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+}
 
 /* Footer */
 .footer {

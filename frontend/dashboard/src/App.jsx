@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useApp } from '@/context/AppContext'
 import { AppProvider } from '@/context/AppContext'
 import { ROUTES } from '@/constants/navigation'
 
@@ -16,22 +17,38 @@ import Models      from '@/components/screens/Models'
 // Root component — wraps everything in providers + router
 // ─────────────────────────────────────────────────────────────────
 
+function AuthenticatedRoute({ children }) {
+  const { isAuthenticated } = useApp()
+  if (!isAuthenticated) return <Navigate to={ROUTES.LOGIN} replace />
+  return children
+}
+
+function AppRoutes() {
+  const { isAuthenticated } = useApp()
+
+  return (
+    <Routes>
+      <Route
+        path={ROUTES.LOGIN}
+        element={isAuthenticated ? <Navigate to={ROUTES.DASHBOARD} replace /> : <Login />}
+      />
+      <Route path={ROUTES.DASHBOARD} element={<AuthenticatedRoute><Dashboard /></AuthenticatedRoute>} />
+      <Route path={ROUTES.PREDICT_LIVE} element={<AuthenticatedRoute><PredictLive /></AuthenticatedRoute>} />
+      <Route path={ROUTES.PRE_GAME} element={<AuthenticatedRoute><PreGame /></AuthenticatedRoute>} />
+      <Route path={ROUTES.HISTORY} element={<AuthenticatedRoute><History /></AuthenticatedRoute>} />
+      <Route path={ROUTES.BILLING} element={<AuthenticatedRoute><Billing /></AuthenticatedRoute>} />
+      <Route path={ROUTES.ACCOUNT} element={<AuthenticatedRoute><Account /></AuthenticatedRoute>} />
+      <Route path={ROUTES.MODELS} element={<AuthenticatedRoute><Models /></AuthenticatedRoute>} />
+      <Route path="*" element={<Navigate to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN} replace />} />
+    </Routes>
+  )
+}
+
 export default function App() {
   return (
     <AppProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path={ROUTES.LOGIN}        element={<Login />}       />
-          <Route path={ROUTES.DASHBOARD}    element={<Dashboard />}   />
-          <Route path={ROUTES.PREDICT_LIVE} element={<PredictLive />} />
-          <Route path={ROUTES.PRE_GAME}     element={<PreGame />}     />
-          <Route path={ROUTES.HISTORY}      element={<History />}     />
-          <Route path={ROUTES.BILLING}      element={<Billing />}     />
-          <Route path={ROUTES.ACCOUNT}      element={<Account />}     />
-          <Route path={ROUTES.MODELS}       element={<Models />}      />
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
-        </Routes>
+        <AppRoutes />
       </BrowserRouter>
     </AppProvider>
   )
