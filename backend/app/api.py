@@ -284,23 +284,14 @@ def auth_login(request: Request, payload: AuthLoginRequest, response: Response, 
         APIKey.user_id == user.id,
         APIKey.is_active.is_(True),
     ).order_by(APIKey.created_at.desc()).first()
-
-    raw_key = None
-    credits = 0
-    if key_obj:
-        tx = db.query(CreditTransaction).filter(
-            CreditTransaction.api_key == key_obj.key,
-            CreditTransaction.description.like("lol_%"),
-        ).order_by(CreditTransaction.created_at.desc()).first()
-        raw_key = tx.description if tx else None
-        credits = key_obj.credits
+    credits = key_obj.credits if key_obj else 0
 
     return {
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
         "username": user.username,
         "email": user.email,
-        "api_key": raw_key,
         "credits_remaining": credits,
     }
 

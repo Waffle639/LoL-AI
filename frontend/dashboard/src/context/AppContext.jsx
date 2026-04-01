@@ -14,7 +14,7 @@ function initialSession() {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw)
-    if (!parsed?.user || !parsed?.apiKey) return null
+    if (!parsed?.user || !parsed?.accessToken) return null
     return parsed
   } catch {
     return null
@@ -37,7 +37,7 @@ export function AppProvider({ children }) {
 
   const user = session?.user ?? { name: 'Guest', initial: 'G', email: '' }
   const apiKey = session?.apiKey ?? ''
-  const isAuthenticated = Boolean(session?.apiKey)
+  const isAuthenticated = Boolean(session?.accessToken)
 
   const consumeCredit = () => {
     setCredits(current => {
@@ -58,7 +58,9 @@ export function AppProvider({ children }) {
         initial: (payload.username || '?').charAt(0).toUpperCase(),
         email: payload.email,
       },
-      apiKey: payload.api_key,
+      apiKey: payload.api_key ?? session?.apiKey ?? '',
+      accessToken: payload.access_token,
+      refreshToken: payload.refresh_token,
       credits: payload.credits_remaining ?? 0,
     }
     setSession(normalized)
