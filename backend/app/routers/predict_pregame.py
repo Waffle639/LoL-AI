@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db, APIKey
-from app.auth import verify_api_key, consume_credit
+from app.auth import get_current_api_key_with_credits, consume_credit
 from app.schemas import PreGameMatchInput, PreGameMatchResponse, PreGameTeamResult
 
 router = APIRouter(tags=["predict"])
@@ -112,10 +112,15 @@ def _lookup_player_data(player_name, champion, position: str, side: str,
     }
 
 
-@router.post("/predict/pregame", response_model=PreGameMatchResponse)
+@router.post(
+    "/predict/pregame",
+    response_model=PreGameMatchResponse,
+    summary="Prediccion pregame",
+    description="Calcula probabilidad de victoria antes de jugar, usando drafts y roster.",
+)
 def predict_pregame(
     data: PreGameMatchInput,
-    key_obj: APIKey = Depends(verify_api_key),
+    key_obj: APIKey = Depends(get_current_api_key_with_credits),
     db: Session = Depends(get_db),
 ):
     import app.api as api_module

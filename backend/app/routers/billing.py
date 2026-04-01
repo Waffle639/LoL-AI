@@ -3,8 +3,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db, APIKey, CreditTransaction, User, PendingRegistration
-from app.auth import get_api_key, create_user_and_api_key, hash_key, hash_password
-from pydantic import BaseModel, EmailStr
+from app.auth import get_current_user, create_user_and_api_key, hash_password
+from pydantic import BaseModel, EmailStr, Field
 import stripe
 import os
 import secrets
@@ -15,10 +15,21 @@ router = APIRouter(prefix="/billing", tags=["billing"])
 
 
 class RegisterBillingRequest(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
-    plan: str = "starter"
+    username: str = Field(..., description="Nombre de usuario")
+    email: EmailStr = Field(..., description="Email de pago")
+    password: str = Field(..., description="Contrasena (minimo 8 caracteres)")
+    plan: str = Field("starter", description="Plan: starter o monthly")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{
+                "username": "summoner1",
+                "email": "summoner1@lolai.com",
+                "password": "Pass12345",
+                "plan": "starter"
+            }]
+        }
+    }
 
 PACKS = {
     "starter": {
@@ -40,7 +51,11 @@ PACKS = {
 }
 
 
-@router.get("/checkout")
+@router.get(
+    "/checkout",
+    summary="Ver planes",
+    description="Muestra planes disponibles antes de crear el checkout.",
+)
 def checkout_info():
     return {
         "message": "Use POST /billing/register para crear una sesión de checkout",
@@ -48,7 +63,11 @@ def checkout_info():
     }
 
 
-@router.post("/register")
+@router.post(
+    "/register",
+    summary="Registro con checkout",
+    description="Crea registro pendiente y devuelve checkout_url de Stripe.",
+)
 def register_submit(payload: RegisterBillingRequest, db: Session = Depends(get_db)):
     """Valida el payload, guarda registro pendiente y crea checkout de Stripe."""
     username = payload.username.strip()
@@ -122,21 +141,31 @@ def register_submit(payload: RegisterBillingRequest, db: Session = Depends(get_d
 
 # ==================== CANCEL ====================
 
-@router.get("/cancel")
+@router.get(
+    "/cancel",
+    summary="Checkout cancelado",
+    description="Resultado cuando el usuario cancela el pago en Stripe.",
+)
 def cancel():
     return {"status": "cancelled", "message": "Pago cancelado por el usuario"}
 
 
 # ==================== CREDITS ====================
 
-@router.get("/credits")
-def get_credits(api_key: str = Depends(get_api_key), db: Session = Depends(get_db)):
-    """Consulta los créditos restantes de tu API Key."""
-    hashed  = hash_key(api_key)
-    key_obj = db.query(APIKey).filter(APIKey.key == hashed).first()
+@router.get(
+    "/credits",
+    summary="Consultar creditos",
+    description="Devuelve creditos restantes del usuario autenticado.",
+)
+def get_credits(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Consulta créditos autenticando por JWT o API key."""
+    key_obj = db.query(APIKey).filter(
+        APIKey.user_id == user.id,
+        APIKey.is_active.is_(True),
+    ).order_by(APIKey.created_at.desc()).first()
 
     if not key_obj:
-        raise HTTPException(status_code=401, detail="API Key inválida")
+        raise HTTPException(status_code=404, detail="No hay API key activa para este usuario")
 
     return {
         "name":              key_obj.name,

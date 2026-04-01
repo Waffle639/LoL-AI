@@ -6,7 +6,7 @@ POST /predict → Prediu el resultat d'una partida de LoL
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db, APIKey
-from app.auth import verify_api_key, consume_credit
+from app.auth import get_current_api_key_with_credits, consume_credit
 from app.schemas import LoLNeuralNetInput, PredictionResponse
 import pandas as pd
 
@@ -47,10 +47,15 @@ ALL_FEATURES = [
     'barons', 'opp_barons', 'towers', 'opp_towers', 'totalgold'
 ]
 
-@router.post("/predict", response_model=PredictionResponse)
+@router.post(
+    "/predict",
+    response_model=PredictionResponse,
+    summary="Prediccion con estadisticas",
+    description="Predice victoria o derrota con stats y variables codificadas.",
+)
 def predict(
     data: LoLNeuralNetInput,
-    key_obj: APIKey = Depends(verify_api_key),
+    key_obj: APIKey = Depends(get_current_api_key_with_credits),
     db: Session = Depends(get_db),
 ):
     import app.api as api_module

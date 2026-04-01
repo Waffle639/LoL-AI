@@ -11,6 +11,7 @@ from sqlalchemy import create_engine, Column, String, Integer, DateTime, Boolean
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime, timezone
+from typing import Optional
 import os
 from pathlib import Path
 
@@ -70,6 +71,7 @@ class User(Base):
 
     # Relación: un usuario tiene N api_keys
     api_keys            = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
+    refresh_tokens      = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
 
 
 class PendingRegistration(Base):
@@ -113,6 +115,54 @@ class CreditTransaction(Base):
 
     # Relación inversa
     api_key_obj         = relationship("APIKey", back_populates="transactions")
+
+
+class RefreshToken(Base):
+    """Refresh token persistido en DB para permitir revocación."""
+    __tablename__ = "refresh_tokens"
+
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    user_id     = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash  = Column(String, nullable=False, unique=True, index=True)
+    expires_at  = Column(DateTime, nullable=False)
+    revoked     = Column(Boolean, nullable=False, default=False)
+    created_at  = Column(DateTime, default=utc_now)
+
+    user        = relationship("User", back_populates="refresh_tokens")
+
+
+# ==================== REFRESH TOKENS HELPERS ====================
+
+def save_refresh_token(db, user_id: int, token_hash: str, expires_at: datetime) -> RefreshToken:
+    token = RefreshToken(
+        user_id=user_id,
+        token_hash=token_hash,
+        expires_at=expires_at,
+        revoked=False,
+    )
+    db.add(token)
+    db.commit()
+    db.refresh(token)
+    return token
+
+
+def get_refresh_token(db, token_hash: str) -> Optional[RefreshToken]:
+    return db.query(RefreshToken).filter(RefreshToken.token_hash == token_hash).first()
+
+
+def revoke_refresh_token(db, token_hash: str) -> None:
+    token = get_refresh_token(db, token_hash)
+    if token and not token.revoked:
+        token.revoked = True
+        db.commit()
+
+
+def revoke_all_user_tokens(db, user_id: int) -> None:
+    db.query(RefreshToken).filter(
+        RefreshToken.user_id == user_id,
+        RefreshToken.revoked.is_(False),
+    ).update({"revoked": True}, synchronize_session=False)
+    db.commit()
 
 
 # ==================== INIT ====================

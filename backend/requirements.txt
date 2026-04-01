@@ -29,3 +29,8 @@ dvc[http]
 # Testing
 pytest==8.4.1
 httpx==0.28.1
+
+# Auth
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+slowapi==0.1.9

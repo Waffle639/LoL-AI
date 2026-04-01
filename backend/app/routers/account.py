@@ -2,27 +2,51 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from app.core.database import get_db, User, APIKey, CreditTransaction
-from app.auth import verify_password, hash_password, hash_key, get_api_key
+from app.auth import verify_password, hash_password, hash_key, get_api_key, get_current_user_jwt
 import secrets
 
 router = APIRouter(prefix="/account", tags=["account"])
 
 
 class RegisterRequest(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
+    username: str = Field(..., description="Nombre de usuario")
+    email: EmailStr = Field(..., description="Email de acceso")
+    password: str = Field(..., description="Contrasena (minimo 8 caracteres)")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{
+                "username": "summoner1",
+                "email": "summoner1@lolai.com",
+                "password": "Pass12345"
+            }]
+        }
+    }
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
+    email: EmailStr = Field(..., description="Email registrado")
+    password: str = Field(..., description="Contrasena")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{
+                "email": "summoner1@lolai.com",
+                "password": "Pass12345"
+            }]
+        }
+    }
 
 
-@router.post("/register")
+@router.post(
+    "/register",
+    summary="Crear cuenta",
+    description="Legacy: usa /auth/register. Crea usuario y API key inicial para usar la API.",
+    deprecated=True,
+)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     username = payload.username.strip()
     email = payload.email.strip().lower()
@@ -69,7 +93,12 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         "credits_remaining": key_obj.credits,
     }
 
-@router.post("/login")
+@router.post(
+    "/login",
+    summary="Login con API key",
+    description="Legacy: usa /auth/login. Valida usuario y devuelve su API key y creditos.",
+    deprecated=True,
+)
 def login_submit(payload: LoginRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
     password = payload.password
@@ -106,7 +135,12 @@ def login_submit(payload: LoginRequest, db: Session = Depends(get_db)):
     }
 
 
-@router.get("/me")
+@router.get(
+    "/me",
+    summary="Perfil actual",
+    description="Legacy: usa /auth/me. Devuelve datos de la cuenta usando X-API-Key.",
+    deprecated=True,
+)
 def me(api_key: str = Depends(get_api_key), db: Session = Depends(get_db)):
     hashed = hash_key(api_key)
     key_obj = db.query(APIKey).filter(APIKey.key == hashed, APIKey.is_active == True).first()
@@ -128,6 +162,49 @@ def me(api_key: str = Depends(get_api_key), db: Session = Depends(get_db)):
 
 # ==================== LOGOUT ====================
 
-@router.post("/logout")
+@router.post(
+    "/logout",
+    summary="Logout cliente",
+    description="Respuesta informativa. El cliente debe borrar su API key local.",
+    deprecated=True,
+)
 def logout():
     return {"message": "Logout correcto. El cliente debe eliminar la API key local."}
+
+
+@router.get(
+    "/apikey",
+    summary="Rotar API key",
+    description="Legacy: usa /auth/apikey. Genera una nueva API key y desactiva la anterior.",
+    deprecated=True,
+)
+def get_or_rotate_api_key(user: User = Depends(get_current_user_jwt), db: Session = Depends(get_db)):
+    """Devuelve una API key en claro para integraciones directas.
+
+    Como la key solo se almacena hasheada, se rota y se devuelve una nueva.
+    """
+    old_key = db.query(APIKey).filter(
+        APIKey.user_id == user.id,
+        APIKey.is_active.is_(True),
+    ).order_by(APIKey.created_at.desc()).first()
+
+    credits = old_key.credits if old_key else 0
+    if old_key:
+        old_key.is_active = False
+
+    raw_key = "lol_" + secrets.token_urlsafe(32)
+    hashed = hash_key(raw_key)
+
+    new_key = APIKey(
+        key=hashed,
+        name=user.username,
+        credits=credits,
+        is_active=True,
+        user_id=user.id,
+        key_prefix=raw_key[:16],
+    )
+    db.add(new_key)
+    db.add(CreditTransaction(api_key=hashed, amount=0, description=raw_key))
+    db.commit()
+
+    return {"api_key": raw_key}

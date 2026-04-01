@@ -16,9 +16,9 @@ def test_health_endpoint(client):
 
 
 def test_predict_requires_api_key(client, valid_predict_input):
-    """POST /predict without X-API-Key should fail validation."""
+    """POST /predict without credentials should be unauthorized."""
     response = client.post("/predict", json=valid_predict_input)
-    assert response.status_code == 422
+    assert response.status_code == 401
 
 
 def test_predict_valid_input_consumes_credit(client, db_session_factory, seeded_api_key, valid_predict_input):

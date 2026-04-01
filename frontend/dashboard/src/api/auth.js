@@ -19,21 +19,21 @@ async function request(path, options = {}) {
 }
 
 export function register(payload) {
-  return request('/account/register', {
+  return request('/auth/register', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 }
 
 export function login(payload) {
-  return request('/account/login', {
+  return request('/auth/login', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 }
 
 export function me(apiKey) {
-  return request('/account/me', {
+  return request('/auth/me', {
     method: 'GET',
     headers: {
       'X-API-Key': apiKey,
