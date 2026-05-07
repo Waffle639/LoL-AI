@@ -78,8 +78,8 @@ def load_model():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    create_tables()           # Crea tablas SQLite si no existen
-    logger.info("Base de datos SQLite inicializada")
+    create_tables()           # Crea tablas supbase si no existen
+    logger.info("Base de datos Supabase inicializada")
     load_model()
     yield
     # Shutdown
