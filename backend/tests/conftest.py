@@ -181,7 +181,7 @@ def seeded_api_key(db_session_factory):
             username=f"tester_{secrets.token_hex(4)}",
             email=f"tester_{secrets.token_hex(4)}@example.com",
             hashed_password="not-used-in-tests",
-            plan="starter",
+            credits=initial_credits,
             is_active=True,
         )
         db.add(user)
@@ -190,7 +190,6 @@ def seeded_api_key(db_session_factory):
         key = APIKey(
             key=hashed,
             name=user.username,
-            credits=initial_credits,
             is_active=True,
             user_id=user.id,
             key_prefix=raw_key[:16],
@@ -217,7 +216,7 @@ def zero_credits_api_key(db_session_factory):
             username=f"zero_{secrets.token_hex(4)}",
             email=f"zero_{secrets.token_hex(4)}@example.com",
             hashed_password="not-used-in-tests",
-            plan="starter",
+            credits=0,
             is_active=True,
         )
         db.add(user)
@@ -226,7 +225,6 @@ def zero_credits_api_key(db_session_factory):
         key = APIKey(
             key=hashed,
             name=user.username,
-            credits=0,
             is_active=True,
             user_id=user.id,
             key_prefix=raw_key[:16],
@@ -248,7 +246,7 @@ def inactive_api_key(db_session_factory):
             username=f"inactive_{secrets.token_hex(4)}",
             email=f"inactive_{secrets.token_hex(4)}@example.com",
             hashed_password="not-used-in-tests",
-            plan="starter",
+            credits=3,
             is_active=True,
         )
         db.add(user)
@@ -257,7 +255,6 @@ def inactive_api_key(db_session_factory):
         key = APIKey(
             key=hashed,
             name=user.username,
-            credits=3,
             is_active=False,
             user_id=user.id,
             key_prefix=raw_key[:16],

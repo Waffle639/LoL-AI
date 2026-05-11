@@ -17,7 +17,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from dotenv import load_dotenv
 load_dotenv()
 
-from app.core.database import SessionLocal, APIKey, CreditTransaction, create_tables
+from app.core.database import SessionLocal, APIKey, CreditTransaction, User, create_tables
+from app.auth import hash_password
 from datetime import datetime
 
 import hashlib
@@ -31,9 +32,32 @@ def generate_key(name, credits):
     raw_key = "lol_" + secrets.token_urlsafe(32)
     hashed  = hash_key(raw_key)
 
-    db.add(APIKey(key=hashed, name=name, credits=credits, is_active=True, created_at=datetime.utcnow()))
+    email = f"{name}-{secrets.token_hex(4)}@local"
+    user = User(
+        username=name,
+        email=email,
+        hashed_password=hash_password(secrets.token_urlsafe(12)),
+        credits=credits,
+        is_active=True,
+    )
+    db.add(user)
+    db.flush()
+
+    db.add(APIKey(
+        key=hashed,
+        name=name,
+        is_active=True,
+        user_id=user.id,
+        key_prefix=raw_key[:16],
+        created_at=datetime.utcnow(),
+    ))
     if credits > 0:
-        db.add(CreditTransaction(api_key=hashed, amount=credits, description="Créditos iniciales"))
+        db.add(CreditTransaction(
+            user_id=user.id,
+            api_key=hashed,
+            amount=credits,
+            description="Créditos iniciales",
+        ))
     db.commit()
     db.close()
     print(f"\n Key generada!")
@@ -53,7 +77,8 @@ def list_keys():
     print(f"\n{'Nombre':<20} {'Key':<16} {'Créditos':>10} {'Activa':>8}")
     print("-" * 60)
     for k in keys:
-        print(f"{k.name:<20} {k.key[:12]}...  {k.credits:>10} {'✅' if k.is_active else '❌':>8}")
+        credits = k.user.credits if k.user else 0
+        print(f"{k.name:<20} {k.key[:12]}...  {credits:>10} {'✅' if k.is_active else '❌':>8}")
 
 
 def add_credits(key_prefix, credits):
@@ -63,11 +88,25 @@ def add_credits(key_prefix, credits):
         print(f"❌ Key no encontrada: {key_prefix}")
         db.close()
         return
-    k.credits += credits
-    db.add(CreditTransaction(api_key=k.key, amount=credits, description="Créditos añadidos manualmente"))
+    if not k.user_id:
+        print("❌ La API key no tiene usuario asociado")
+        db.close()
+        return
+    user = db.query(User).filter(User.id == k.user_id).first()
+    if not user:
+        print("❌ Usuario no encontrado")
+        db.close()
+        return
+    user.credits += credits
+    db.add(CreditTransaction(
+        user_id=user.id,
+        api_key=k.key,
+        amount=credits,
+        description="Créditos añadidos manualmente",
+    ))
     db.commit()
     db.close()
-    print(f" +{credits} créditos a '{k.name}'. Total: {k.credits}")
+    print(f" +{credits} créditos a '{k.name}'. Total: {user.credits}")
 
 
 if __name__ == "__main__":

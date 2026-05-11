@@ -9,8 +9,8 @@ import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db, APIKey
-from app.auth import get_current_api_key_with_credits, consume_credit
+from app.core.database import get_db, APIKey, User
+from app.auth import get_current_user_with_credits, consume_credit
 from app.schemas import PreGameMatchInput, PreGameMatchResponse, PreGameTeamResult
 
 router = APIRouter(tags=["predict"])
@@ -120,9 +120,10 @@ def _lookup_player_data(player_name, champion, position: str, side: str,
 )
 def predict_pregame(
     data: PreGameMatchInput,
-    key_obj: APIKey = Depends(get_current_api_key_with_credits),
+    auth_ctx: tuple[User, APIKey | None] = Depends(get_current_user_with_credits),
     db: Session = Depends(get_db),
 ):
+    user, key_obj = auth_ctx
     import app.api as api_module
     artifacts      = api_module._pregame_artifacts
     model_version  = api_module._model_version
@@ -188,7 +189,7 @@ def predict_pregame(
     predicted_winner = t1_name if t1_pct >= t2_pct else t2_name
     confidence       = max(t1_pct, t2_pct)
 
-    consume_credit(key_obj, db, description="Predicció LoL /predict/pregame")
+    consume_credit(user, db, description="Predicció LoL /predict/pregame", api_key_obj=key_obj)
 
     return PreGameMatchResponse(
         team1=PreGameTeamResult(

@@ -16,7 +16,7 @@
 }
 .keyVal {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--gold);
   flex: 1;
   letter-spacing: 1px;
@@ -36,6 +36,96 @@
 .keyBtn:hover { color: var(--gold); border-color: var(--gold-d); }
 
 .keyActions { display: flex; align-items: center; gap: 12px; }
-.keyWarn    { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: var(--txt-d); }
+.keyWarn    { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--txt-d); }
+.keyError   { font-size: 11px; color: var(--red); margin-bottom: 8px; font-family: 'Exo 2', sans-serif; }
 
 .dangerText { font-size: 12px; color: var(--txt-d); margin-bottom: 14px; font-family: 'Exo 2', sans-serif; }
+
+.keyModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 9, 21, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+  padding: 24px;
+}
+
+.keyModal {
+  width: min(520px, 92vw);
+  background: linear-gradient(160deg, rgba(16, 30, 53, 0.98), rgba(6, 15, 30, 0.98));
+  border: 1px solid var(--bdr-hi);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  padding: 18px 18px 16px;
+}
+
+.keyModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.keyModalTitle {
+  font-family: 'Cinzel', serif;
+  font-size: 16px;
+  color: var(--gold-b);
+  letter-spacing: 0.6px;
+}
+
+.keyModalClose {
+  background: transparent;
+  border: 1px solid var(--bdr);
+  color: var(--txt-d);
+  font-size: 12px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.keyModalClose:hover { color: var(--gold); border-color: var(--gold-d); }
+
+.keyModalNote {
+  font-size: 12px;
+  color: var(--txt-m);
+  margin-bottom: 12px;
+  font-family: 'Exo 2', sans-serif;
+}
+
+.keyModalBox {
+  background: var(--bg3);
+  border: 1px solid var(--bdr);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.keyModalValue {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--gold);
+  letter-spacing: 0.7px;
+  word-break: break-all;
+  flex: 1;
+}
+
+.keyModalCopy {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--txt-d);
+  background: var(--bg5);
+  border: 1px solid var(--bdr);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.keyModalCopy:hover { color: var(--gold); border-color: var(--gold-d); }
+
+.keyModalActions {
+  display: flex;
+  justify-content: flex-end;
+}

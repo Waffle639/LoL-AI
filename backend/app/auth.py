@@ -5,9 +5,9 @@ Funciones públicas:
     hash_key(key)                  → SHA-256 de una API key
     get_api_key(header)            → Extrae X-API-Key del header
     verify_api_key(key, db)        → Valida key y créditos (FastAPI Depends)
-    consume_credit(key_obj, db)    → Descuenta 1 crédito tras una predicción
-    create_user_and_api_key(...)   → Crea User + APIKey + CreditTransaction
-                                     Único punto de creación de cuentas.
+    consume_credit(user, db)       → Descuenta 1 crédito de la cuenta
+    create_user_and_api_key(...)   → Crea User + APIKey (inactiva) + CreditTransaction
+                                     para altas via Stripe.
 """
 
 import hashlib
@@ -55,6 +55,54 @@ def utc_now() -> datetime:
 def hash_key(key: str) -> str:
     """SHA-256 de una API key en texto plano."""
     return hashlib.sha256(key.encode()).hexdigest()
+
+
+def generate_api_key_values() -> tuple[str, str, str]:
+    """Genera una API key en claro, su hash y su prefijo de 16 chars."""
+    raw_key = "lol_" + secrets.token_urlsafe(32)
+    hashed = hash_key(raw_key)
+    return raw_key, hashed, raw_key[:16]
+
+
+def issue_api_key_for_user(db: Session, user: "User", mode: str) -> dict:
+    """Crea o regenera una API key activa para el usuario.
+
+    mode: "create" (si no hay key activa) o "regenerate" (rota la actual).
+    Devuelve raw key, prefijo y creditos asociados.
+    """
+    active_key = db.query(APIKey).filter(
+        APIKey.user_id == user.id,
+        APIKey.is_active.is_(True),
+    ).order_by(APIKey.created_at.desc()).first()
+
+    if mode == "create":
+        if active_key:
+            raise HTTPException(status_code=409, detail="El usuario ya tiene una API key activa")
+    elif mode == "regenerate":
+        if not active_key:
+            raise HTTPException(status_code=404, detail="No hay API key activa para regenerar")
+        active_key.is_active = False
+        active_key.updated_at = utc_now()
+    else:
+        raise HTTPException(status_code=400, detail="Modo de API key no valido")
+
+    raw_key, hashed, prefix = generate_api_key_values()
+    new_key = APIKey(
+        key=hashed,
+        name=user.username,
+        is_active=True,
+        user_id=user.id,
+        key_prefix=prefix,
+        created_at=utc_now(),
+    )
+    db.add(new_key)
+    db.commit()
+
+    return {
+        "api_key": raw_key,
+        "api_key_prefix": prefix,
+        "credits_remaining": user.credits,
+    }
 
 
 def hash_token(token: str) -> str:
@@ -158,13 +206,20 @@ def verify_api_key(api_key: str = Depends(get_api_key), db: Session = Depends(ge
         raise HTTPException(status_code=401, detail="API Key inválida")
     if not key_obj.is_active:
         raise HTTPException(status_code=403, detail="API Key desactivada")
-    if key_obj.credits <= 0:
+    if not key_obj.user_id:
+        raise HTTPException(status_code=401, detail="API Key inválida")
+
+    user = db.query(User).filter(User.id == key_obj.user_id, User.is_active.is_(True)).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Usuario no autorizado")
+
+    if user.credits <= 0:
         raise HTTPException(
             status_code=402,
             detail={
                 "error": "Sin créditos",
                 "message": "Recarga créditos en /billing/checkout",
-                "credits_remaining": key_obj.credits,
+                "credits_remaining": user.credits,
             },
         )
     return key_obj
@@ -248,19 +303,22 @@ def get_current_api_key_with_credits(
     if token:
         user_id = verify_jwt(token)
         if user_id:
+            user = db.query(User).filter(User.id == user_id, User.is_active.is_(True)).first()
+            if not user:
+                raise HTTPException(status_code=401, detail="Usuario no autorizado")
             key_obj = db.query(APIKey).filter(
                 APIKey.user_id == user_id,
                 APIKey.is_active.is_(True),
             ).order_by(APIKey.created_at.desc()).first()
             if key_obj is None:
                 raise HTTPException(status_code=404, detail="No hay API key activa para este usuario")
-            if key_obj.credits <= 0:
+            if user.credits <= 0:
                 raise HTTPException(
                     status_code=402,
                     detail={
                         "error": "Sin créditos",
                         "message": "Recarga créditos en /billing/checkout",
-                        "credits_remaining": key_obj.credits,
+                        "credits_remaining": user.credits,
                     },
                 )
             return key_obj
@@ -271,12 +329,94 @@ def get_current_api_key_with_credits(
     raise HTTPException(status_code=401, detail="Not authenticated")
 
 
-def consume_credit(key_obj: APIKey, db: Session, description: str = "Predicción"):
-    """Descuenta 1 crédito y registra la transacción. Llamar tras predicción exitosa."""
-    key_obj.credits    -= 1
-    key_obj.updated_at  = utc_now()
-    db.add(CreditTransaction(api_key=key_obj.key, amount=-1, description=description))
+def get_current_user_with_credits(
+    x_api_key: Optional[str] = Security(api_key_scheme),
+    bearer: Optional[HTTPAuthorizationCredentials] = Security(bearer_scheme),
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+    db: Session = Depends(get_db),
+) -> tuple[User, Optional[APIKey]]:
+    """Resuelve usuario autenticado y valida créditos en la cuenta."""
+    bearer_token = bearer.credentials if bearer else None
+    header_token = authorization[7:] if authorization and authorization.startswith("Bearer ") else None
+    token = bearer_token or header_token
+
+    if token:
+        user_id = verify_jwt(token)
+        if user_id:
+            user = db.query(User).filter(User.id == user_id, User.is_active.is_(True)).first()
+            if not user:
+                raise HTTPException(status_code=401, detail="Usuario no autorizado")
+            if user.credits <= 0:
+                raise HTTPException(
+                    status_code=402,
+                    detail={
+                        "error": "Sin créditos",
+                        "message": "Recarga créditos en /billing/checkout",
+                        "credits_remaining": user.credits,
+                    },
+                )
+            key_obj = db.query(APIKey).filter(
+                APIKey.user_id == user.id,
+                APIKey.is_active.is_(True),
+            ).order_by(APIKey.created_at.desc()).first()
+            return user, key_obj
+
+    if x_api_key:
+        key_obj = verify_api_key(api_key=x_api_key, db=db)
+        user = db.query(User).filter(User.id == key_obj.user_id, User.is_active.is_(True)).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="Usuario no autorizado")
+        return user, key_obj
+
+    raise HTTPException(status_code=401, detail="Not authenticated")
+
+
+def consume_credit(
+    user: User,
+    db: Session,
+    description: str = "Predicción",
+    api_key_obj: Optional[APIKey] = None,
+):
+    """Descuenta 1 crédito de la cuenta y registra la transacción."""
+    user.credits -= 1
+    db.add(CreditTransaction(
+        user_id=user.id,
+        api_key=api_key_obj.key if api_key_obj else None,
+        amount=-1,
+        description=description,
+    ))
     db.commit()
+
+
+def apply_credits_to_user(
+    db: Session,
+    user: User,
+    credits: int,
+    description: str,
+    stripe_session_id: Optional[str] = None,
+    commit: bool = True,
+) -> Optional[APIKey]:
+    """Suma créditos a la cuenta y registra la transacción."""
+    if credits <= 0:
+        return None
+
+    user.credits = (user.credits or 0) + credits
+
+    key_obj = db.query(APIKey).filter(
+        APIKey.user_id == user.id,
+        APIKey.is_active.is_(True),
+    ).order_by(APIKey.created_at.desc()).first()
+
+    db.add(CreditTransaction(
+        user_id=user.id,
+        api_key=key_obj.key if key_obj else None,
+        amount=credits,
+        description=description,
+        stripe_session_id=stripe_session_id,
+    ))
+    if commit:
+        db.commit()
+    return key_obj
 
 
 # ==================== CREACIÓN DE CUENTA ====================
@@ -286,15 +426,14 @@ def create_user_and_api_key(
     pending_id:        Optional[str],
     customer_id:       Optional[str],
     email_fallback:    str,
-    plan:              str,
     credits:           int,
     stripe_session_id: str,
 ) -> Optional[str]:
     """
     Crea el User (desde PendingRegistration si existe, o con los datos de Stripe)
-    y su APIKey asociada.
+    y registra los creditos en la cuenta.
 
-    Devuelve el raw_key en texto plano para mostrarlo una única vez.
+    No expone la API key en claro y solo guarda el hash.
     Devuelve None si el usuario ya existía (protección contra retries del webhook).
     """
 
@@ -317,7 +456,6 @@ def create_user_and_api_key(
             email              = pending.email,
             hashed_password    = pending.hashed_password,
             stripe_customer_id = customer_id,
-            plan               = plan,
         )
     else:
         # Sin pending: usar email del objeto de sesión de Stripe
@@ -330,42 +468,45 @@ def create_user_and_api_key(
                 email              = email_fallback,
                 hashed_password    = "",
                 stripe_customer_id = customer_id,
-                plan               = plan,
             )
+
+    if customer_id and not user.stripe_customer_id:
+        user.stripe_customer_id = customer_id
 
     db.add(user)
     db.flush()  # obtiene user.id sin commit
 
-    # ── 2. Generar API Key ────────────────────────────────────────────────────
-    raw_key    = "lol_" + secrets.token_urlsafe(32)
-    hashed     = hash_key(raw_key)
-    key_prefix = raw_key[:16]
+    # ── 2. Generar API Key inactiva si no existe ─────────────────────────────
+    existing_key = db.query(APIKey).filter(
+        APIKey.user_id == user.id,
+    ).order_by(APIKey.created_at.desc()).first()
 
-    key_obj = APIKey(
-        key        = hashed,
-        name       = user.username,
-        credits    = credits,
-        is_active  = True,
-        user_id    = user.id,
-        key_prefix = key_prefix,
-        created_at = utc_now(),
+    if not existing_key:
+        _raw_key, hashed, _prefix = generate_api_key_values()
+        key_obj = APIKey(
+            key        = hashed,
+            name       = user.username,
+            is_active  = False,
+            user_id    = user.id,
+            key_prefix = None,
+            created_at = utc_now(),
+        )
+        db.add(key_obj)
+        db.flush()
+
+    apply_credits_to_user(
+        db=db,
+        user=user,
+        credits=credits,
+        description="Creditos de checkout",
+        stripe_session_id=stripe_session_id,
+        commit=False,
     )
-    db.add(key_obj)
-    db.flush()  # persiste la APIKey antes de la FK en CreditTransaction
 
-    # ── 3. Registrar transacción inicial ──────────────────────────────────────
-    # La raw_key se guarda temporalmente en description; se borra al mostrarse en /success
-    db.add(CreditTransaction(
-        api_key           = hashed,
-        amount            = credits,
-        description       = raw_key,
-        stripe_session_id = stripe_session_id,
-    ))
-
-    # ── 4. Limpiar pending ────────────────────────────────────────────────────
+    # ── 5. Limpiar pending ────────────────────────────────────────────────────
     if pending:
         db.delete(pending)
 
     db.commit()
-    logger.info(f"✅ Cuenta creada: {user.email} | plan: {plan} | {credits} créditos")
-    return raw_key
+    logger.info(f"✅ Creditos sumados: {user.email} | +{credits}")
+    return None

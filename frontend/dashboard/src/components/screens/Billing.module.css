@@ -32,6 +32,26 @@
 .plansTitle { font-family: 'Cinzel', serif; font-size: 15px; font-weight: 700; letter-spacing: 1px; color: var(--txt); margin-bottom: 4px; }
 .plansSub   { font-family: 'Exo 2', sans-serif; font-size: 12px; color: var(--txt-d); margin-bottom: 14px; font-weight: 300; }
 
+.plansNotice {
+  background: rgba(200, 169, 110, 0.1);
+  border: 1px solid rgba(200, 169, 110, 0.3);
+  color: var(--gold);
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.plansError {
+  background: rgba(200, 48, 32, 0.08);
+  border: 1px solid rgba(200, 48, 32, 0.3);
+  color: var(--red);
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
 .plansGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 
 .priceCard {

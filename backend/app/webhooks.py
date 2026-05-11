@@ -1,13 +1,12 @@
 ﻿"""
 Webhook de Stripe.
-POST /webhooks/stripe  Genera la API key y crea la cuenta del usuario tras el pago.
+POST /webhooks/stripe  Crea la cuenta y registra creditos tras el pago.
 """
 
 from fastapi import APIRouter, Request, HTTPException
 from sqlalchemy.orm import Session
-from app.core.database import SessionLocal, APIKey, CreditTransaction, User
-from app.auth import create_user_and_api_key
-from datetime import datetime
+from app.core.database import SessionLocal, CreditTransaction, User
+from app.auth import create_user_and_api_key, apply_credits_to_user
 import stripe
 import os
 import logging
@@ -43,8 +42,9 @@ async def stripe_webhook(request: Request):
     if event["type"] == "checkout.session.completed":
         session    = event["data"]["object"]
         metadata   = dict(session.get("metadata") or {})
-        plan       = metadata.get("plan", "starter")
         credits    = int(metadata.get("credits", 20))
+        checkout_type = metadata.get("checkout_type")
+        user_id_raw = metadata.get("user_id")
         pay_status = getattr(session, "payment_status", None) or session.get("payment_status")
 
         if pay_status not in ("paid", "no_payment_required"):
@@ -52,15 +52,46 @@ async def stripe_webhook(request: Request):
 
         db: Session = SessionLocal()
         try:
-            create_user_and_api_key(
-                db                = db,
-                pending_id        = metadata.get("pending_id"),
-                customer_id       = session.get("customer"),
-                email_fallback    = _get_email_from_session(session),
-                plan              = plan,
-                credits           = credits,
-                stripe_session_id = session["id"],
-            )
+            stripe_customer_id = session.get("customer") or metadata.get("stripe_customer_id")
+            user = None
+
+            if stripe_customer_id:
+                user = db.query(User).filter(User.stripe_customer_id == stripe_customer_id).first()
+
+            if not user and user_id_raw:
+                try:
+                    user_id = int(user_id_raw)
+                except (TypeError, ValueError):
+                    logger.warning(f"checkout.session.completed: user_id invalido {user_id_raw}")
+                    return {"status": "ignored", "reason": "user_id invalido"}
+                user = db.query(User).filter(User.id == user_id).first()
+
+            if checkout_type == "topup":
+                if not user:
+                    logger.warning("checkout.session.completed: usuario no encontrado para topup")
+                    return {"status": "ignored", "reason": "usuario no encontrado"}
+
+                if stripe_customer_id and not user.stripe_customer_id:
+                    user.stripe_customer_id = stripe_customer_id
+
+                pack_id = metadata.get("pack_id", "topup")
+                description = f"Compra de creditos ({pack_id})"
+                apply_credits_to_user(
+                    db=db,
+                    user=user,
+                    credits=credits,
+                    description=description,
+                    stripe_session_id=session["id"],
+                )
+            else:
+                create_user_and_api_key(
+                    db                = db,
+                    pending_id        = metadata.get("pending_id"),
+                    customer_id       = stripe_customer_id,
+                    email_fallback    = _get_email_from_session(session),
+                    credits           = credits,
+                    stripe_session_id = session["id"],
+                )
         except Exception as e:
             db.rollback()
             tb = traceback.format_exc()
@@ -86,20 +117,15 @@ async def stripe_webhook(request: Request):
                 logger.warning(f"invoice.paid: no se encontro usuario para customer {customer_id}")
                 return {"status": "ignored"}
 
-            key_obj = db.query(APIKey).filter(
-                APIKey.user_id == user.id, APIKey.is_active == True
-            ).first()
-            if key_obj:
-                key_obj.credits   += 50
-                key_obj.updated_at = datetime.utcnow()
-                db.add(CreditTransaction(
-                    api_key           = key_obj.key,
-                    amount            = 50,
-                    description       = "Renovacion mensual",
-                    stripe_session_id = subscription_id,
-                ))
-                db.commit()
-                logger.info(f"Renovacion mensual: +50 creditos para {user.email}")
+            user.credits = (user.credits or 0) + 50
+            db.add(CreditTransaction(
+                user_id           = user.id,
+                amount            = 50,
+                description       = "Renovacion mensual",
+                stripe_session_id = subscription_id,
+            ))
+            db.commit()
+            logger.info(f"Renovacion mensual: +50 creditos para {user.email}")
         except Exception as e:
             db.rollback()
             logger.error(f"Error procesando invoice.paid: {e}")

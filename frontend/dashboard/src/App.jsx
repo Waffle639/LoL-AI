@@ -18,13 +18,28 @@ import Models      from '@/components/screens/Models'
 // ─────────────────────────────────────────────────────────────────
 
 function AuthenticatedRoute({ children }) {
-  const { isAuthenticated } = useApp()
+  const { isAuthenticated, authReady } = useApp()
+  if (!authReady) {
+    return (
+      <div style={{ padding: 40, color: 'var(--txt-d)', fontFamily: 'Exo 2, sans-serif' }}>
+        Loading session...
+      </div>
+    )
+  }
   if (!isAuthenticated) return <Navigate to={ROUTES.LOGIN} replace />
   return children
 }
 
 function AppRoutes() {
-  const { isAuthenticated } = useApp()
+  const { isAuthenticated, authReady } = useApp()
+
+  if (!authReady) {
+    return (
+      <div style={{ padding: 40, color: 'var(--txt-d)', fontFamily: 'Exo 2, sans-serif' }}>
+        Loading session...
+      </div>
+    )
+  }
 
   return (
     <Routes>

@@ -1,6 +1,6 @@
 """Basic API endpoint tests adapted to the LoL API."""
 
-from app.core.database import APIKey
+from app.core.database import APIKey, User
 
 
 def test_health_endpoint(client):
@@ -35,7 +35,9 @@ def test_predict_valid_input_consumes_credit(client, db_session_factory, seeded_
     with db_session_factory() as db:
         key_obj = db.query(APIKey).filter(APIKey.key == seeded_api_key["hashed"]).first()
         assert key_obj is not None
-        assert key_obj.credits == seeded_api_key["initial_credits"] - 1
+        user = db.query(User).filter(User.id == key_obj.user_id).first()
+        assert user is not None
+        assert user.credits == seeded_api_key["initial_credits"] - 1
 
 
 def test_predict_invalid_range_returns_422(client, seeded_api_key, valid_predict_input):
@@ -60,7 +62,9 @@ def test_predict_pregame_valid_input(client, db_session_factory, seeded_api_key,
     with db_session_factory() as db:
         key_obj = db.query(APIKey).filter(APIKey.key == seeded_api_key["hashed"]).first()
         assert key_obj is not None
-        assert key_obj.credits == seeded_api_key["initial_credits"] - 1
+        user = db.query(User).filter(User.id == key_obj.user_id).first()
+        assert user is not None
+        assert user.credits == seeded_api_key["initial_credits"] - 1
 
 
 def test_predict_pregame_unknown_label_returns_422(client, seeded_api_key, valid_pregame_input):

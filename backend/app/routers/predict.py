@@ -5,8 +5,8 @@ POST /predict → Prediu el resultat d'una partida de LoL
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.core.database import get_db, APIKey
-from app.auth import get_current_api_key_with_credits, consume_credit
+from app.core.database import get_db, APIKey, User
+from app.auth import get_current_user_with_credits, consume_credit
 from app.schemas import LoLNeuralNetInput, PredictionResponse
 import pandas as pd
 
@@ -55,9 +55,10 @@ ALL_FEATURES = [
 )
 def predict(
     data: LoLNeuralNetInput,
-    key_obj: APIKey = Depends(get_current_api_key_with_credits),
+    auth_ctx: tuple[User, APIKey | None] = Depends(get_current_user_with_credits),
     db: Session = Depends(get_db),
 ):
+    user, key_obj = auth_ctx
     import app.api as api_module
     _neural_net    = api_module._neural_net
     _model_version = api_module._model_version
@@ -84,12 +85,12 @@ def predict(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al predecir: {str(e)}")
 
-    consume_credit(key_obj, db, description="Predicció LoL /predict")
+    consume_credit(user, db, description="Predicció LoL /predict", api_key_obj=key_obj)
 
     return PredictionResponse(
         result_label="Victory" if pred == 1 else "Defeat",
         prediction=pred,
         probability=round(prob, 4),
         model_version=_model_version or "1.0.0",
-        credits_remaining=key_obj.credits
+        credits_remaining=user.credits,
     )

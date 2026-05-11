@@ -4,9 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, Field
 
-from app.core.database import get_db, User, APIKey, CreditTransaction
-from app.auth import verify_password, hash_password, hash_key, get_api_key, get_current_user_jwt
-import secrets
+from app.core.database import get_db, User, APIKey
+from app.auth import verify_password, hash_password, hash_key, get_api_key, get_current_user_jwt, issue_api_key_for_user
 
 router = APIRouter(prefix="/account", tags=["account"])
 
@@ -44,7 +43,7 @@ class LoginRequest(BaseModel):
 @router.post(
     "/register",
     summary="Crear cuenta",
-    description="Legacy: usa /auth/register. Crea usuario y API key inicial para usar la API.",
+    description="Legacy: usa /auth/register. Crea usuario (sin API key inicial).",
     deprecated=True,
 )
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
@@ -65,32 +64,19 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         username=username,
         email=email,
         hashed_password=hash_password(password),
-        plan="starter",
         is_active=True,
     )
     db.add(user)
     db.flush()
 
-    raw_key = "lol_" + secrets.token_urlsafe(32)
-    hashed = hash_key(raw_key)
-    key_obj = APIKey(
-        key=hashed,
-        name=username,
-        credits=0,
-        is_active=True,
-        user_id=user.id,
-        key_prefix=raw_key[:16],
-    )
-    db.add(key_obj)
-    db.add(CreditTransaction(api_key=hashed, amount=0, description=raw_key))
     db.commit()
 
     return {
         "message": "Cuenta creada",
         "username": user.username,
         "email": user.email,
-        "api_key": raw_key,
-        "credits_remaining": key_obj.credits,
+        "api_key_prefix": None,
+        "credits_remaining": user.credits,
     }
 
 @router.post(
@@ -113,25 +99,16 @@ def login_submit(payload: LoginRequest, db: Session = Depends(get_db)):
 
     key_obj = db.query(APIKey).filter(
         APIKey.user_id == user.id,
-        APIKey.is_active == True,
-    ).first()
-
-    if not key_obj:
-        raise HTTPException(status_code=404, detail="No hay API key activa para este usuario")
-
-    tx = db.query(CreditTransaction).filter(
-        CreditTransaction.api_key == key_obj.key,
-        CreditTransaction.description.like("lol_%"),
-    ).first()
-    raw_key = tx.description if tx else None
+        APIKey.is_active.is_(True),
+    ).order_by(APIKey.created_at.desc()).first()
+    credits = user.credits
 
     return {
         "message": "Login correcto",
         "username": user.username,
         "email": user.email,
-        "api_key": raw_key,
-        "api_key_prefix": key_obj.key_prefix,
-        "credits_remaining": key_obj.credits,
+        "api_key_prefix": key_obj.key_prefix if key_obj else None,
+        "credits_remaining": credits,
     }
 
 
@@ -154,9 +131,8 @@ def me(api_key: str = Depends(get_api_key), db: Session = Depends(get_db)):
     return {
         "username": user.username,
         "email": user.email,
-        "plan": user.plan,
         "api_key_prefix": key_obj.key_prefix,
-        "credits_remaining": key_obj.credits,
+        "credits_remaining": user.credits,
     }
 
 
@@ -175,36 +151,8 @@ def logout():
 @router.get(
     "/apikey",
     summary="Rotar API key",
-    description="Legacy: usa /auth/apikey. Genera una nueva API key y desactiva la anterior.",
+    description="Legacy: usa /auth/apikey/regenerate. Genera una nueva API key y desactiva la anterior.",
     deprecated=True,
 )
 def get_or_rotate_api_key(user: User = Depends(get_current_user_jwt), db: Session = Depends(get_db)):
-    """Devuelve una API key en claro para integraciones directas.
-
-    Como la key solo se almacena hasheada, se rota y se devuelve una nueva.
-    """
-    old_key = db.query(APIKey).filter(
-        APIKey.user_id == user.id,
-        APIKey.is_active.is_(True),
-    ).order_by(APIKey.created_at.desc()).first()
-
-    credits = old_key.credits if old_key else 0
-    if old_key:
-        old_key.is_active = False
-
-    raw_key = "lol_" + secrets.token_urlsafe(32)
-    hashed = hash_key(raw_key)
-
-    new_key = APIKey(
-        key=hashed,
-        name=user.username,
-        credits=credits,
-        is_active=True,
-        user_id=user.id,
-        key_prefix=raw_key[:16],
-    )
-    db.add(new_key)
-    db.add(CreditTransaction(api_key=hashed, amount=0, description=raw_key))
-    db.commit()
-
-    return {"api_key": raw_key}
+    return issue_api_key_for_user(db=db, user=user, mode="regenerate")

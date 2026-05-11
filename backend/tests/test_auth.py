@@ -14,7 +14,7 @@ def test_login_hides_api_key_and_returns_refresh_token(client, db_session_factor
             username="login_user",
             email=email,
             hashed_password=hash_password(password),
-            plan="starter",
+            credits=7,
             is_active=True,
         )
         db.add(user)
@@ -24,7 +24,6 @@ def test_login_hides_api_key_and_returns_refresh_token(client, db_session_factor
             APIKey(
                 key="hashed_key_for_test",
                 name=user.username,
-                credits=7,
                 is_active=True,
                 user_id=user.id,
                 key_prefix="lol_test_prefix",

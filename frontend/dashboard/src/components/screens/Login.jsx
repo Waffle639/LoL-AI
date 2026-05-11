@@ -76,9 +76,12 @@ export default function Login() {
         throw new Error('Las contraseñas no coinciden')
       }
 
-      await registerClient({ username, email, password })
-      setSuccess('Cuenta creada correctamente. Bienvenido a LoL-AI.')
-      navigate(ROUTES.DASHBOARD)
+       const payload = await registerClient({ username, email, password })
+      const welcome = payload?.message || 'Gracias por registrarte. Te regalamos 10 creditos de prueba.'
+      setSuccess(welcome)
+      setTimeout(() => {
+        navigate(ROUTES.DASHBOARD)
+      }, 1200)
     } catch (err) {
       setError(err.message || 'No se pudo completar la autenticación')
     }

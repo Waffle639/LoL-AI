@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import anime from 'animejs'
 import AppLayout from '@/components/layout/AppLayout'
 import StatCard from '@/components/ui/StatCard'
@@ -7,6 +7,7 @@ import Badge from '@/components/ui/Badge'
 import DonutChart from '@/components/charts/DonutChart'
 import Sparkline from '@/components/charts/Sparkline'
 import { useApp } from '@/context/AppContext'
+import { getBillingSummary } from '@/api/billing'
 import styles from './Dashboard.module.css'
 
 // ─────────────────────────────────────────────────────────────────
@@ -22,7 +23,40 @@ const RECENT = [
 ]
 
 export default function Dashboard() {
-  const { credits } = useApp()
+  const { credits, setCredits, accessToken, getAccessToken } = useApp()
+  const [usage, setUsage] = useState({
+    used_today: 0,
+    used_total: 0,
+    bought_total: 0,
+  })
+
+  useEffect(() => {
+    let active = true
+    if (!accessToken) return () => { active = false }
+
+    const loadSummary = async () => {
+      try {
+        const token = await getAccessToken()
+        if (!token || !active) return
+        const data = await getBillingSummary({ accessToken: token })
+        if (!active) return
+        setUsage({
+          used_today: data?.used_today ?? 0,
+          used_total: data?.used_total ?? 0,
+          bought_total: data?.bought_total ?? 0,
+        })
+        if (typeof data?.credits_remaining === 'number') {
+          setCredits(data.credits_remaining)
+        }
+      } catch {
+        if (!active) return
+      }
+    }
+
+    loadSummary()
+
+    return () => { active = false }
+  }, [accessToken, getAccessToken, setCredits])
 
   // Entry animations
   useEffect(() => {
@@ -47,8 +81,8 @@ export default function Dashboard() {
       <div className={styles.statRow}>
         <StatCard label="Total Predictions" value="127"  trend="+14 this week" trendUp color="gold"  />
         <StatCard label="Avg Accuracy"       value="89%"  trend="model performing well" trendUp color="green" />
-        <StatCard label="Credits Left"       value={<span id="db-credits">{credits}</span>} trend="of 50 purchased" color="teal"  />
-        <StatCard label="Credits Used"       value="85"  trend="8 today" color="red"   />
+        <StatCard label="Credits Left"       value={<span id="db-credits">{credits}</span>} trend={`of ${usage.bought_total} purchased`} color="teal"  />
+        <StatCard label="Credits Used"       value={usage.used_total}  trend={`${usage.used_today} today`} color="red"   />
       </div>
 
       {/* Charts row */}

@@ -116,6 +116,7 @@ class PredictionResponse(BaseModel):
     probability: float = Field(..., ge=0.0, le=1.0, description="Probabilitat de victòria (0.0-1.0)")
     model_version: str = Field(..., description="Versió del model utilitzat")
     result_label: str = Field(..., description="Etiqueta llegible: 'Victory' o 'Defeat'")
+    credits_remaining: Optional[int] = Field(None, description="Créditos restantes en la cuenta")
 
 
 class HealthResponse(BaseModel):

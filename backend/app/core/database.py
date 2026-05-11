@@ -70,13 +70,14 @@ class User(Base):
     email               = Column(String, unique=True, index=True, nullable=False)
     hashed_password     = Column(String, nullable=False)
     stripe_customer_id  = Column(String, nullable=True)
-    plan                = Column(String, default="starter")   # "starter" | "monthly"
+    credits             = Column(Integer, default=0)
     is_active           = Column(Boolean, default=True)
     created_at          = Column(DateTime, default=utc_now)
 
     # Relación: un usuario tiene N api_keys
     api_keys            = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
     refresh_tokens      = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
+    credit_transactions = relationship("CreditTransaction", back_populates="user", cascade="all, delete-orphan")
 
 
 class PendingRegistration(Base):
@@ -87,7 +88,6 @@ class PendingRegistration(Base):
     username        = Column(String, nullable=False)
     email           = Column(String, nullable=False)
     hashed_password = Column(String, nullable=False)
-    plan            = Column(String, default="starter")
     created_at      = Column(DateTime, default=utc_now)
 
 
@@ -96,7 +96,6 @@ class APIKey(Base):
 
     key         = Column(String, primary_key=True, index=True)
     name        = Column(String, nullable=False)
-    credits     = Column(Integer, default=0)
     is_active   = Column(Boolean, default=True)
     user_id     = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     key_prefix  = Column(String, nullable=True)               # Primeros 16 chars (para mostrar en dashboard)
@@ -112,13 +111,15 @@ class CreditTransaction(Base):
     __tablename__ = "credit_transactions"
 
     id                  = Column(Integer, primary_key=True, autoincrement=True)
-    api_key             = Column(String, ForeignKey("api_keys.key", ondelete="CASCADE"), index=True)
+    user_id             = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    api_key             = Column(String, ForeignKey("api_keys.key", ondelete="CASCADE"), nullable=True, index=True)
     amount              = Column(Integer)
     description         = Column(String)
     stripe_session_id   = Column(String, nullable=True)
     created_at          = Column(DateTime, default=utc_now)
 
     # Relación inversa
+    user                = relationship("User", back_populates="credit_transactions")
     api_key_obj         = relationship("APIKey", back_populates="transactions")
 
 

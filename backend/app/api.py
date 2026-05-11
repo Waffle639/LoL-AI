@@ -29,7 +29,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from app.core.config import settings, setup_logging
-from app.core.database import get_db, create_tables, APIKey, User, CreditTransaction, revoke_all_user_tokens
+from app.core.database import get_db, create_tables, APIKey, User, revoke_all_user_tokens
 from app.ml.train import LoLNeuralNetWrapper
 from app.auth import (
     verify_password,
@@ -41,7 +41,8 @@ from app.auth import (
     revoke_refresh_token,
     get_current_user,
     get_current_user_jwt,
-    hash_key,
+    issue_api_key_for_user,
+    apply_credits_to_user,
 )
 from app.routers import predict, billing
 from app.routers import predict_pregame
@@ -53,6 +54,7 @@ logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+WELCOME_CREDITS = int(os.getenv("WELCOME_CREDITS", "10"))
 
 _neural_net         = None
 _pregame_artifacts  = None
@@ -94,7 +96,8 @@ app = FastAPI(
         "Flujo recomendado:\n"
         "1) POST /auth/register o /auth/login\n"
         "2) Authorize en Swagger con Bearer token\n"
-        "3) Llamar /predict o /predict/pregame"
+        "3) POST /auth/apikey/create (solo la primera vez)\n"
+        "4) Llamar /predict o /predict/pregame"
     ),
     lifespan=lifespan,
     swagger_ui_parameters={"persistAuthorization": True},
@@ -201,7 +204,7 @@ def _clear_refresh_cookie(response: Response):
 @app.post(
     "/auth/register",
     summary="Registro principal",
-    description="Crea cuenta, API key inicial y sesion JWT.",
+    description="Crea cuenta y sesion JWT. La API key se crea bajo demanda.",
     tags=["auth"],
 )
 def auth_register(payload: AuthRegisterRequest, response: Response, db: Session = Depends(get_db)):
@@ -218,43 +221,38 @@ def auth_register(payload: AuthRegisterRequest, response: Response, db: Session 
     if existing:
         raise HTTPException(status_code=409, detail="El email o el nombre de usuario ya están registrados")
 
-    from app.auth import hash_password, hash_key
-    import secrets
+    from app.auth import hash_password
 
     user = User(
         username=username,
         email=email,
         hashed_password=hash_password(password),
-        plan="starter",
         is_active=True,
     )
     db.add(user)
     db.flush()
 
-    raw_key = "lol_" + secrets.token_urlsafe(32)
-    hashed = hash_key(raw_key)
-    key_obj = APIKey(
-        key=hashed,
-        name=username,
-        credits=0,
-        is_active=True,
-        user_id=user.id,
-        key_prefix=raw_key[:16],
-    )
-    db.add(key_obj)
-    db.add(CreditTransaction(api_key=hashed, amount=0, description=raw_key))
-    db.commit()
+    if WELCOME_CREDITS > 0:
+        apply_credits_to_user(
+            db=db,
+            user=user,
+            credits=WELCOME_CREDITS,
+            description="Bonus de bienvenida",
+        )
+    else:
+        db.commit()
 
     access_token = create_access_token(user.id)
     refresh_token = create_refresh_token(user.id, db)
     _set_refresh_cookie(response, refresh_token)
 
     return {
-        "message": "Cuenta creada",
+        "message": f"Gracias por registrarte. Te regalamos {WELCOME_CREDITS} creditos de prueba.",
         "username": user.username,
         "email": user.email,
-        "api_key": raw_key,
-        "credits_remaining": key_obj.credits,
+        "api_key_prefix": None,
+        "credits_remaining": WELCOME_CREDITS,
+        "bonus_credits": WELCOME_CREDITS,
         "access_token": access_token,
         "token_type": "bearer",
     }
@@ -284,7 +282,7 @@ def auth_login(request: Request, payload: AuthLoginRequest, response: Response, 
         APIKey.user_id == user.id,
         APIKey.is_active.is_(True),
     ).order_by(APIKey.created_at.desc()).first()
-    credits = key_obj.credits if key_obj else 0
+    credits = user.credits
 
     return {
         "access_token": access_token,
@@ -292,6 +290,7 @@ def auth_login(request: Request, payload: AuthLoginRequest, response: Response, 
         "token_type": "bearer",
         "username": user.username,
         "email": user.email,
+        "api_key_prefix": key_obj.key_prefix if key_obj else None,
         "credits_remaining": credits,
     }
 
@@ -357,49 +356,43 @@ def auth_me(user: User = Depends(get_current_user), db: Session = Depends(get_db
         APIKey.user_id == user.id,
         APIKey.is_active.is_(True),
     ).order_by(APIKey.created_at.desc()).first()
-
     return {
         "username": user.username,
         "email": user.email,
-        "plan": user.plan,
         "api_key_prefix": key_obj.key_prefix if key_obj else None,
-        "credits_remaining": key_obj.credits if key_obj else 0,
+        "credits_remaining": user.credits,
     }
+
+
+@app.post(
+    "/auth/apikey/create",
+    summary="Crear API key",
+    description="Crea una API key por primera vez (requiere JWT).",
+    tags=["auth"],
+)
+def auth_apikey_create(user: User = Depends(get_current_user_jwt), db: Session = Depends(get_db)):
+    return issue_api_key_for_user(db=db, user=user, mode="create")
+
+
+@app.post(
+    "/auth/apikey/regenerate",
+    summary="Regenerar API key",
+    description="Regenera la API key activa (requiere JWT).",
+    tags=["auth"],
+)
+def auth_apikey_regenerate(user: User = Depends(get_current_user_jwt), db: Session = Depends(get_db)):
+    return issue_api_key_for_user(db=db, user=user, mode="regenerate")
 
 
 @app.get(
     "/auth/apikey",
-    summary="Rotar API key",
-    description="Genera una nueva API key para integraciones directas (requiere JWT).",
+    summary="Rotar API key (legacy)",
+    description="Legacy: usa POST /auth/apikey/regenerate.",
     tags=["auth"],
+    deprecated=True,
 )
-def auth_apikey(user: User = Depends(get_current_user_jwt), db: Session = Depends(get_db)):
-    old_key = db.query(APIKey).filter(
-        APIKey.user_id == user.id,
-        APIKey.is_active.is_(True),
-    ).order_by(APIKey.created_at.desc()).first()
-
-    credits = old_key.credits if old_key else 0
-    if old_key:
-        old_key.is_active = False
-
-    import secrets
-    raw_key = "lol_" + secrets.token_urlsafe(32)
-    hashed = hash_key(raw_key)
-
-    new_key = APIKey(
-        key=hashed,
-        name=user.username,
-        credits=credits,
-        is_active=True,
-        user_id=user.id,
-        key_prefix=raw_key[:16],
-    )
-    db.add(new_key)
-    db.add(CreditTransaction(api_key=hashed, amount=0, description=raw_key))
-    db.commit()
-
-    return {"api_key": raw_key}
+def auth_apikey_legacy(user: User = Depends(get_current_user_jwt), db: Session = Depends(get_db)):
+    return issue_api_key_for_user(db=db, user=user, mode="regenerate")
 
 
 @app.get("/success")
