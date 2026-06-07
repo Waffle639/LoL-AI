@@ -4,10 +4,13 @@ POST /predict/pregame → Prediu el resultat d'una partida de LoL
 a partir dels rosters dels dos equips (abans que comenci la partida).
 """
 
+import logging
 import numpy as np
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.core.database import get_db, APIKey, User
 from app.auth import get_current_user_with_credits, consume_credit
@@ -149,7 +152,10 @@ def predict_pregame(
                 artifacts=artifacts,
             )
             if data_p is None:
-                # Unknown label → skip silently (will get default prob)
+                logger.warning(
+                    f"Jugador '{p.player}'/'{p.champion}' de '{team_input.team_name}' "
+                    f"no trobat al dataset — omitit de la predicció"
+                )
                 continue
 
             canonical_team = data_p['canonical']['team']

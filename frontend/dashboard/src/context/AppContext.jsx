@@ -176,7 +176,8 @@ export function AppProvider({ children }) {
         scheduleRefresh(accessTokenValue)
       }
       return accessTokenValue
-    } catch {
+    } catch (err) {
+      console.error('Session refresh failed', err)
       logout()
       return null
     }

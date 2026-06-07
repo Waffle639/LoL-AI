@@ -129,6 +129,7 @@ async def stripe_webhook(request: Request):
         except Exception as e:
             db.rollback()
             logger.error(f"Error procesando invoice.paid: {e}")
+            raise HTTPException(status_code=500, detail=f"Error interno: {e}")
         finally:
             db.close()
 

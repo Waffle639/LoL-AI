@@ -48,7 +48,8 @@ export default function Dashboard() {
         if (typeof data?.credits_remaining === 'number') {
           setCredits(data.credits_remaining)
         }
-      } catch {
+      } catch (err) {
+        console.error('Dashboard: error loading billing summary', err)
         if (!active) return
       }
     }

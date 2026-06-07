@@ -67,7 +67,8 @@ export default function Billing() {
         if (typeof data?.credits_remaining === 'number') {
           setCredits(data.credits_remaining)
         }
-      } catch {
+      } catch (err) {
+        console.error('Billing: error loading summary', err)
         if (!active) return
       }
     }
