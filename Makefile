@@ -245,7 +245,7 @@ predict:
 	       "player_champ_winrate":0.70,"kills":5,"deaths":2,"assists":8, \
 	       "teamkills":24,"teamdeaths":10,"dragons":3,"opp_dragons":1, \
 	       "elders":1,"opp_elders":0,"barons":2,"opp_barons":0, \
-	       "towers":9,"opp_towers":3,"totalgold":14800}') \
+	       "towers":9,"opp_towers":3,"totalgold":14800}') 
 	|| { echo "ERROR: No se puede conectar a http://localhost:$(PORT)"; rm -f "$$tmp"; exit 1; }; \
 	python3 -m json.tool < "$$tmp" 2>/dev/null || cat "$$tmp"; \
 	rm -f "$$tmp"; \

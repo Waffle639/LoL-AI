@@ -1,6 +1,161 @@
-.grid    { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid    { display: grid; grid-template-columns: minmax(360px, 1.1fr) minmax(300px, 0.9fr); gap: 20px; align-items: start; }
+.formStack { display: flex; flex-direction: column; gap: 16px; }
 .twoCol  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .threeCol{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; }
+.statsGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.statsGridTwo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.panelNote {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+  color: var(--txt-d);
+  margin: -6px 0 10px;
+}
+.panelTag {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 8px 0 6px;
+}
+.secondaryPanel {
+  margin-top: 14px;
+  border-color: rgba(200, 169, 110, 0.12);
+  background: linear-gradient(180deg, rgba(8, 16, 30, 0.95), rgba(6, 12, 24, 0.96));
+}
+.compactPanel {
+  padding: 14px 16px;
+}
+.statsGridCompact { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.choiceSection { margin-top: 8px; }
+.choiceLabel {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--txt-d);
+  margin-bottom: 6px;
+}
+.sideGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.choiceCard {
+  border: 1px solid var(--bdr);
+  background: var(--bg3);
+  color: var(--txt);
+  padding: 12px 10px;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.choiceCard:active { transform: translateY(1px); }
+.choiceCardActive {
+  border-color: var(--gold-b);
+  box-shadow: 0 0 0 1px rgba(200, 169, 110, 0.4);
+}
+.choiceCardError {
+  border-color: rgba(248, 140, 120, 0.7);
+  box-shadow: 0 0 0 1px rgba(248, 140, 120, 0.35);
+}
+.choiceCard-blue { background: linear-gradient(160deg, rgba(10, 200, 185, 0.18), rgba(6, 15, 30, 0.9)); }
+.choiceCard-red { background: linear-gradient(160deg, rgba(200, 48, 32, 0.16), rgba(6, 15, 30, 0.9)); }
+.choiceTitle {
+  display: block;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.choiceTag {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--txt-m);
+  text-transform: uppercase;
+}
+.roleGrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.roleCard {
+  border: 1px solid var(--bdr);
+  background: var(--bg3);
+  color: var(--txt);
+  padding: 10px 6px 8px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.roleCard:active { transform: translateY(1px); }
+.roleCardActive {
+  border-color: var(--gold-b);
+  box-shadow: 0 0 0 1px rgba(200, 169, 110, 0.4);
+}
+.roleCardError {
+  border-color: rgba(248, 140, 120, 0.7);
+  box-shadow: 0 0 0 1px rgba(248, 140, 120, 0.35);
+}
+.roleIcon {
+  width: 26px;
+  height: 26px;
+  fill: currentColor;
+  color: var(--gold);
+}
+.roleLabel {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--txt-m);
+}
+.numericInput {
+  border-radius: 4px;
+  text-align: center;
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 0.5px;
+  background: var(--bg4);
+  border: 1px solid rgba(200, 169, 110, 0.26);
+}
+.inputError {
+  border-color: rgba(248, 140, 120, 0.8) !important;
+  box-shadow: 0 0 0 1px rgba(248, 140, 120, 0.35);
+}
+.lockedInput {
+  background: rgba(8, 15, 28, 0.9);
+  color: var(--txt-d);
+  border-color: rgba(200, 169, 110, 0.16);
+  cursor: default;
+}
+.mutedPanel {
+  background: rgba(6, 12, 24, 0.92);
+  border-color: rgba(200, 169, 110, 0.08);
+}
+.flashErrors .inputError,
+.flashErrors .choiceCardError,
+.flashErrors .roleCardError {
+  animation: errorPulse 0.5s ease;
+}
+
+@keyframes errorPulse {
+  0% { box-shadow: 0 0 0 0 rgba(248, 140, 120, 0.1); }
+  50% { box-shadow: 0 0 0 4px rgba(248, 140, 120, 0.18); }
+  100% { box-shadow: 0 0 0 1px rgba(248, 140, 120, 0.35); }
+}
+.numericInput::-webkit-outer-spin-button,
+.numericInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.numericInput { -moz-appearance: textfield; }
+.errorText {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+  color: var(--red);
+  margin-top: 10px;
+}
 
 .resultCard {
   background: var(--bg2);
@@ -19,7 +174,6 @@
   font-size: 9px;
   color: var(--txt-d);
   letter-spacing: 4px;
-  margin-bottom: 8px;
   text-transform: uppercase;
 }
 
@@ -56,4 +210,77 @@
 .chipLabel{ font-family: 'Share Tech Mono', monospace; font-size: 8px; color: var(--txt-d); letter-spacing: 2px; margin-bottom: 3px; }
 .chipVal  { font-family: 'Cinzel', serif; font-weight: 700; color: var(--txt); font-size: 12px; }
 
-.actions { display: flex; gap: 10px; margin-top: 14px; }
+.actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+.resultHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.trashButton {
+  background: transparent;
+  border: 1px solid transparent;
+  color: rgba(200, 208, 224, 0.45);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.trashButton svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.trashButton:hover {
+  color: rgba(248, 140, 120, 0.9);
+  border-color: rgba(248, 140, 120, 0.35);
+  background: rgba(248, 140, 120, 0.08);
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 9, 21, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 20px;
+}
+
+.modalCard {
+  width: min(420px, 100%);
+  background: linear-gradient(180deg, rgba(8, 16, 30, 0.98), rgba(6, 12, 24, 0.96));
+  border: 1px solid rgba(200, 169, 110, 0.35);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  padding: 20px 22px;
+}
+
+.modalTitle {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+.modalText {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 13px;
+  color: var(--txt);
+  margin-bottom: 16px;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

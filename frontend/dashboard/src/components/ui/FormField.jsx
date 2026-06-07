@@ -13,16 +13,20 @@ export default function FormField({
   onChange,
   placeholder,
   variant = 'default',
+  className = '',
+  inputClassName = '',
+  ...rest
 }) {
   return (
-    <div className={`${styles.group} ${styles[variant]}`}>
+    <div className={`${styles.group} ${styles[variant]} ${className}`.trim()}>
       {label && <label className={styles.label}>{label}</label>}
       <input
         type={type}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className={styles.input}
+        className={`${styles.input} ${inputClassName}`.trim()}
+        {...rest}
       />
     </div>
   )
