@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from app.core.database import get_db, APIKey, CreditTransaction, User, PendingRegistration
-from app.auth import get_current_user, hash_password
+from app.auth import get_current_user, hash_password, apply_credits_to_user
 from pydantic import BaseModel, EmailStr, Field
 import stripe
 import os
@@ -34,6 +34,10 @@ class RegisterBillingRequest(BaseModel):
 
 class PurchaseCreditsRequest(BaseModel):
     pack_id: str = Field(..., description="ID del pack de creditos")
+
+
+class VerifySessionRequest(BaseModel):
+    session_id: str = Field(..., description="Stripe checkout session ID")
 
 PACKS = {
     "starter": {
@@ -165,7 +169,7 @@ def purchase_credits(
             "pack_id": pack_id,
             "credits": str(pack_info["credits"]),
         },
-        success_url=f"{dashboard_url}/billing?success=true&pack={pack_id}",
+        success_url=f"{dashboard_url}/billing?success=true&pack={pack_id}&session_id={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{dashboard_url}/billing?canceled=true&pack={pack_id}",
     )
 
@@ -185,6 +189,51 @@ def purchase_credits(
         }
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.post(
+    "/verify-session",
+    summary="Verificar sesion de checkout",
+    description="Verifica una sesion de Stripe y aplica creditos si no se procesaron via webhook.",
+)
+def verify_session(
+    payload: VerifySessionRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        session = stripe.checkout.Session.retrieve(payload.session_id)
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=f"Sesion no valida: {e}")
+
+    if session.payment_status not in ("paid", "no_payment_required"):
+        raise HTTPException(status_code=400, detail="El pago no se ha completado")
+
+    metadata = dict(session.metadata or {})
+    if metadata.get("checkout_type") != "topup":
+        raise HTTPException(status_code=400, detail="Sesion no es de tipo topup")
+
+    existing_tx = db.query(CreditTransaction).filter(
+        CreditTransaction.stripe_session_id == payload.session_id
+    ).first()
+    if existing_tx:
+        return {"status": "already_processed", "credits_remaining": user.credits}
+
+    credits = int(metadata.get("credits", 0))
+    if credits <= 0:
+        raise HTTPException(status_code=400, detail="Sesion sin creditos validos")
+
+    pack_id = metadata.get("pack_id", "topup")
+    description = f"Compra de creditos ({pack_id})"
+    apply_credits_to_user(
+        db=db,
+        user=user,
+        credits=credits,
+        description=description,
+        stripe_session_id=payload.session_id,
+    )
+    logger.info(f"Verify-session: creditos sumados para {user.email} | +{credits}")
+    return {"status": "ok", "credits_remaining": user.credits}
 
 
 @router.post(

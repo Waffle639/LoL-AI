@@ -400,6 +400,14 @@ def apply_credits_to_user(
     if credits <= 0:
         return None
 
+    if stripe_session_id:
+        existing_tx = db.query(CreditTransaction).filter(
+            CreditTransaction.stripe_session_id == stripe_session_id
+        ).first()
+        if existing_tx:
+            logger.warning(f"Credito ya aplicado para session {stripe_session_id} — ignorando")
+            return None
+
     user.credits = (user.credits or 0) + credits
 
     key_obj = db.query(APIKey).filter(

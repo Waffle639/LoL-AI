@@ -80,3 +80,99 @@
 .planCreditsLbl { font-family: 'Share Tech Mono', monospace; font-size: 8px; letter-spacing: 3px; color: var(--txt-d); margin-bottom: 12px; }
 .planPrice      { font-family: 'Cinzel', serif; font-size: 24px; font-weight: 700; color: var(--txt); margin-bottom: 3px; }
 .planPer        { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: var(--txt-d); letter-spacing: 1px; margin-bottom: 18px; }
+
+/* ── Verify overlay ─────────────────────────────── */
+.verifyOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 3, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn .3s ease;
+}
+.verifyModal {
+  background: var(--bg2);
+  border: 1px solid var(--gold-d);
+  padding: 40px 48px;
+  text-align: center;
+  min-width: 300px;
+  animation: slideUp .4s ease;
+}
+.verifyTitle {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+.verifyStep {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 13px;
+  color: var(--txt);
+  margin-bottom: 20px;
+  min-height: 20px;
+}
+.verifyDots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.dot, .dotActive {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all .3s ease;
+}
+.dot {
+  background: var(--bg5);
+}
+.dotActive {
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(200, 169, 110, 0.6);
+}
+
+/* ── Spinner ─────────────────────────────────────── */
+.verifySpinner {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 20px;
+}
+.spinnerRing {
+  position: absolute;
+  inset: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  animation: spinRing 1.4s linear infinite;
+}
+.spinnerRing:nth-child(1) {
+  border-top-color: var(--gold);
+  animation-duration: 1.2s;
+}
+.spinnerRing:nth-child(2) {
+  inset: 6px;
+  border-right-color: var(--gold-d);
+  animation-duration: 1.8s;
+  animation-direction: reverse;
+}
+.spinnerRing:nth-child(3) {
+  inset: 12px;
+  border-bottom-color: var(--gold-b);
+  animation-duration: 2.4s;
+}
+
+@keyframes spinRing {
+  to { transform: rotate(360deg); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

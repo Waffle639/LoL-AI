@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import anime from 'animejs'
 import AppLayout from '@/components/layout/AppLayout'
 import Panel, { PanelTitle } from '@/components/ui/Panel'
 import Button from '@/components/ui/Button'
 import { useApp } from '@/context/AppContext'
-import { getBillingSummary, getCreditPacks, createCreditCheckout } from '@/api/billing'
+import { getBillingSummary, getCreditPacks, createCreditCheckout, verifyPurchase } from '@/api/billing'
 import styles from './Billing.module.css'
 
 // ─────────────────────────────────────────────────────────────────
@@ -34,6 +34,9 @@ export default function Billing() {
   const [checkoutError, setCheckoutError] = useState('')
   const [checkoutLoading, setCheckoutLoading] = useState('')
   const [notice, setNotice] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const [verifyStep, setVerifyStep] = useState('')
+  const prevCreditsRef = useRef(credits)
 
   const balanceTotal = Math.max(usage.bought_total || 0, credits)
   const balancePct = balanceTotal > 0
@@ -96,12 +99,88 @@ export default function Billing() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    if (params.get('success') === 'true') {
-      setNotice('Compra aprobada. Tus creditos se actualizaran en segundos.')
-    } else if (params.get('canceled') === 'true') {
+    const success = params.get('success') === 'true'
+    const canceled = params.get('canceled') === 'true'
+    const sessionId = params.get('session_id')
+
+    if (canceled) {
       setNotice('Pago cancelado. No se ha realizado ningun cargo.')
+      return
     }
-  }, [])
+
+    if (success && sessionId) {
+      setVerifying(true)
+      setVerifyStep('Verifying payment...')
+
+      const cleanUrl = () => {
+        const url = new URL(window.location)
+        url.searchParams.delete('success')
+        url.searchParams.delete('session_id')
+        url.searchParams.delete('pack')
+        url.searchParams.delete('canceled')
+        window.history.replaceState({}, '', url)
+      }
+
+      let active = true
+
+      const refreshSummary = async () => {
+        try {
+          const token = await getAccessToken()
+          if (!token || !active) return null
+          const data = await getBillingSummary({ accessToken: token })
+          if (!active || !data) return null
+          if (typeof data?.credits_remaining === 'number') {
+            setCredits(data.credits_remaining)
+          }
+          setUsage({
+            used_today: data?.used_today ?? 0,
+            used_week: data?.used_week ?? 0,
+            used_total: data?.used_total ?? 0,
+            bought_total: data?.bought_total ?? 0,
+          })
+          return data?.credits_remaining
+        } catch (err) {
+          console.error('Billing: polling summary error', err)
+          return null
+        }
+      }
+
+      const done = () => {
+        if (!active) return
+        setVerifying(false)
+        setNotice('Compra completada. Tus creditos estan disponibles.')
+        cleanUrl()
+      }
+
+      const run = async () => {
+        try {
+          const token = await getAccessToken()
+          if (!token || !active) return
+          await verifyPurchase({ accessToken: token, sessionId })
+        } catch (err) {
+          console.error('Billing: verify-session error', err)
+        }
+        if (!active) return
+
+        setVerifyStep('Syncing balance...')
+
+        let attempts = 0
+        const maxAttempts = 5
+        const interval = setInterval(async () => {
+          attempts++
+          const creditsNow = await refreshSummary()
+          if (creditsNow !== null || attempts >= maxAttempts) {
+            clearInterval(interval)
+            done()
+          }
+        }, 600)
+      }
+
+      run()
+
+      return () => { active = false }
+    }
+  }, [getAccessToken, setCredits])
 
   useEffect(() => {
     anime({ targets: '#s-billing .panel', opacity:[0,1], translateY:[18,0], delay: anime.stagger(90), duration:450, easing:'easeOutExpo' })
@@ -112,6 +191,22 @@ export default function Billing() {
   useEffect(() => {
     anime({ targets: '#bal-fill', width:["0%", `${balancePct}%`], duration:950, delay:400, easing:'easeOutExpo' })
   }, [balancePct])
+
+  useEffect(() => {
+    if (credits !== prevCreditsRef.current && prevCreditsRef.current !== undefined) {
+      const el = document.querySelector(`.${styles.balanceNum}`)
+      if (el) {
+        anime({
+          targets: el,
+          scale: [1, 1.2, 1],
+          color: ['#c8a96e', '#50fa7b', '#c8a96e'],
+          duration: 800,
+          easing: 'easeOutElastic(1, .5)',
+        })
+      }
+    }
+    prevCreditsRef.current = credits
+  }, [credits])
 
   const plans = packs.length ? packs : FALLBACK_PLANS
 
@@ -201,6 +296,25 @@ export default function Billing() {
           ))}
         </div>
       </div>
+
+      {verifying && (
+        <div className={styles.verifyOverlay}>
+          <div className={styles.verifyModal}>
+            <div className={styles.verifySpinner}>
+              <div className={styles.spinnerRing} />
+              <div className={styles.spinnerRing} />
+              <div className={styles.spinnerRing} />
+            </div>
+            <div className={styles.verifyTitle}>Processing Payment</div>
+            <div className={styles.verifyStep}>{verifyStep}</div>
+            <div className={styles.verifyDots}>
+              <span className={verifyStep.includes('Verifying') ? styles.dotActive : styles.dot} />
+              <span className={verifyStep.includes('Syncing') ? styles.dotActive : styles.dot} />
+              <span className={!verifying && notice ? styles.dotActive : styles.dot} />
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   )
 }

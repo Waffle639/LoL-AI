@@ -39,3 +39,13 @@ export function createCreditCheckout({ accessToken, packId }) {
     body: JSON.stringify({ pack_id: packId }),
   })
 }
+
+export function verifyPurchase({ accessToken, sessionId }) {
+  return request('/billing/verify-session', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ session_id: sessionId }),
+  })
+}
