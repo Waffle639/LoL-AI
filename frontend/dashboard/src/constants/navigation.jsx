@@ -47,14 +47,7 @@ export const NAV_ITEMS = [
       </>
     ),
   },
-  {
-    label: 'Historial',
-    route: ROUTES.HISTORY,
-    section: 'Navigation',
-    icon: () => (
-      <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM7 7h10v1.5H7zm0 4h10v1.5H7zm0 4h6v1.5H7z"/>
-    ),
-  },
+  // Historial — ocultado por ahora
   {
     label: 'Billing',
     route: ROUTES.BILLING,
@@ -102,7 +95,7 @@ export const TOP_NAV = [
   { label: 'Dashboard',   route: ROUTES.DASHBOARD },
   { label: 'Predict Live',route: ROUTES.PREDICT_LIVE },
   { label: 'Pre-Game',    route: ROUTES.PRE_GAME },
-  { label: 'Historial',   route: ROUTES.HISTORY },
+  // { label: 'Historial',   route: ROUTES.HISTORY },
   { label: 'Billing',     route: ROUTES.BILLING },
   { label: 'Mi Cuenta',   route: ROUTES.ACCOUNT },
   { label: 'Modelos',     route: ROUTES.MODELS },

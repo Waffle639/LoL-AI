@@ -7,7 +7,7 @@ import Login       from '@/components/screens/Login'
 import Dashboard   from '@/components/screens/Dashboard'
 import PredictLive from '@/components/screens/PredictLive'
 import PreGame     from '@/components/screens/PreGame'
-import History     from '@/components/screens/History'
+// import History     from '@/components/screens/History'
 import Billing     from '@/components/screens/Billing'
 import Account     from '@/components/screens/Account'
 import Models      from '@/components/screens/Models'
@@ -50,7 +50,7 @@ function AppRoutes() {
       <Route path={ROUTES.DASHBOARD} element={<AuthenticatedRoute><Dashboard /></AuthenticatedRoute>} />
       <Route path={ROUTES.PREDICT_LIVE} element={<AuthenticatedRoute><PredictLive /></AuthenticatedRoute>} />
       <Route path={ROUTES.PRE_GAME} element={<AuthenticatedRoute><PreGame /></AuthenticatedRoute>} />
-      <Route path={ROUTES.HISTORY} element={<AuthenticatedRoute><History /></AuthenticatedRoute>} />
+      {/* <Route path={ROUTES.HISTORY} element={<AuthenticatedRoute><History /></AuthenticatedRoute>} /> */}
       <Route path={ROUTES.BILLING} element={<AuthenticatedRoute><Billing /></AuthenticatedRoute>} />
       <Route path={ROUTES.ACCOUNT} element={<AuthenticatedRoute><Account /></AuthenticatedRoute>} />
       <Route path={ROUTES.MODELS} element={<AuthenticatedRoute><Models /></AuthenticatedRoute>} />
