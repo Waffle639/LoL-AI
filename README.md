@@ -1,84 +1,131 @@
 <div align="center">
-  <img width="400" alt="LoL AI Prediction" src="https://github.com/user-attachments/assets/7ba83f6d-afd9-4650-9b2d-4c2c87e7f01e" />
+  <img width="420" alt="LoL AI Prediction" src="https://github.com/user-attachments/assets/7ba83f6d-afd9-4650-9b2d-4c2c87e7f01e" />
 
-  <h1>League of Legends Esports — AI Match Prediction API</h1>
+  <h1>League of Legends Esports - AI Match Prediction</h1>
 
   <p>
-    REST API powered by machine learning that predicts the outcome of professional League of Legends matches using 2024 competitive data.<br/>
-    Includes user authentication, API key management, credit billing via Stripe, and full ML pipeline infrastructure.
+    From raw CSV to production API. Two ML models, a full data pipeline, DVC versioning,<br/>
+    a React dashboard with a live champion picker, JWT auth, Stripe billing, all inside Docker.
   </p>
 
-  <img src="https://img.shields.io/badge/Python-3.13+-blue?logo=python&logoColor=white"/>
-  <img src="https://img.shields.io/badge/FastAPI-0.115+-green?logo=fastapi&logoColor=white"/>
-  <img src="https://img.shields.io/badge/PyTorch-2.x-orange?logo=pytorch&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Stripe-Billing-635BFF?logo=stripe&logoColor=white"/>
-  <img src="https://img.shields.io/badge/SQLite-Database-003B57?logo=sqlite&logoColor=white"/>
-  <img src="https://img.shields.io/badge/DVC-Model%20Versioning-13ADC7?logo=dvc&logoColor=white"/>
-  <img src="https://img.shields.io/badge/DagsHub-Storage-FF6B6B"/>
+  <div>
+    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" width="42" alt="Python"/>
+    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/pandas/pandas-original.svg" width="42" alt="Pandas"/>
+    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/numpy/numpy-original.svg" width="42" alt="NumPy"/>
+    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/pytorch/pytorch-original.svg" width="42" alt="PyTorch"/>
+    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/fastapi/fastapi-original.svg" width="42" alt="FastAPI"/>
+    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/react/react-original.svg" width="42" alt="React"/>
+    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/docker/docker-original.svg" width="42" alt="Docker"/>
+    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/sqlite/sqlite-original.svg" width="42" alt="SQLite"/>
+  </div>
 </div>
 
 ---
 
 ## Overview
 
-This project exposes a production-ready API that allows any client to send a match snapshot — either pre-game or mid-game — and receive a win probability prediction in real time. It handles the full lifecycle: user registration, API key generation, prediction requests, and credit consumption tracked per call. Payments and credit top-ups are managed via Stripe Checkout.
+This project is the result of an end-to-end machine learning workflow applied to **competitive League of Legends**.
 
-The ML backend combines two models trained on 12,000+ rows of professional play: a **Random Forest** for pre-game composition analysis (picks, winrates, KDA) and a **PyTorch Neural Network** for live in-game state prediction (kills, gold, objectives).
+I took a raw Kaggle dataset with 12,000+ player records, built a full **ETL pipeline**, trained and compared multiple models, wrapped the best two in a **FastAPI** service, and built a **React dashboard** where you can either paste live match stats or pick champions in a visual pre-game selector to get an instant win-probability prediction.
 
-Models and datasets are versioned with **DVC** and stored in [DagsHub](https://dagshub.com/Waffle639/LoL-AI), keeping the Git repository lightweight.
+Everything is containerised with **Docker**, models are versioned with **DVC**, and the API ships with **JWT auth**, **API-key billing**, and **Stripe** credit top-ups.
 
 ---
 
 ## Tech Stack
 
-<div align="center">
-  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" width="48" alt="Python"/>
-  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/pandas/pandas-original.svg" width="48" alt="Pandas"/>
-  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/numpy/numpy-original.svg" width="48" alt="NumPy"/>
-  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/matplotlib/matplotlib-original.svg" width="48" alt="Matplotlib"/>
-  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/scikitlearn/scikitlearn-original.svg" width="48" alt="scikit-learn"/>
-  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/pytorch/pytorch-original.svg" width="48" alt="PyTorch"/>
-  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/fastapi/fastapi-original.svg" width="48" alt="FastAPI"/>
-  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/sqlite/sqlite-original.svg" width="48" alt="SQLite"/>
-  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/jupyter/jupyter-original.svg" width="48" alt="Jupyter"/>
-  <img src="https://cdn.simpleicons.org/dvc/13ADC7" width="48" alt="DVC"/>
-</div>
-
-<br/>
-<div align="center">
-
 | Layer | Technology |
 |:---|:---|
 | **API Framework** | FastAPI + Uvicorn |
 | **ML Models** | scikit-learn (RandomForest), PyTorch Neural Network |
-| **Data** | pandas, NumPy |
-| **Visualization** | Matplotlib, Seaborn |
-| **Database** | SQLite — users, API keys, credit ledger |
-| **Auth** | Hashed API keys (bcrypt / SHA-256) |
+| **Data** | pandas, NumPy, Parquet |
+| **Database** | SQLite / Supabase - users, API keys, credit ledger |
+| **Auth** | JWT + hashed API keys + httpOnly refresh cookies |
 | **Billing** | Stripe Checkout + Webhooks |
 | **Model Versioning** | DVC + DagsHub |
-| **Environment** | Python 3.13+, Jupyter Notebooks |
-
-</div>
+| **Frontend** | React 18, Vite, anime.js, CSS Modules, Tailwind |
+| **Container** | Docker multi-stage |
+| **Orchestration** | GNU Make |
 
 ---
+
 ## Dataset
 
-- **Source**: [League of Legends 2024 Competitive Game Dataset — Kaggle](https://www.kaggle.com/datasets/barthetur/league-of-legends-2024-competitive-game-dataset)
+- **Source**: [League of Legends 2024 Competitive Game Dataset - Kaggle](https://www.kaggle.com/datasets/barthetur/league-of-legends-2024-competitive-game-dataset)
 - **Rows**: 12,276 player records from professional matches
 - **Teams**: 253 professional teams across all major regions
-- **Players**: 1,305 unique players
+- **Players**: 1,305 unique pro players
 - **Champions**: 147 different champions
-
-Each row represents one player's performance in one game, containing pre-game metadata (team, champion, side, position) and in-game outcomes (kills, gold, objectives, towers).
 
 ---
 
-## Model & Data Storage
+## Screenshots
 
-### Model Metrics
+### Landing Page
 
-Metrics are updated automatically after each training run when the model passes the deployment quality gate.
+Cinematic single-page experience with scroll-driven animations, HTML5 Canvas draft visualisation, and a dark esports aesthetic.
+
+> [Insert landing page screenshot / GIF here]
+
+### Dashboard - Predict Live
+
+Fill 24 match fields (player identity + live stats) and get an instant win probability. Auto-fills historical performance when you select a team + player + champion.
+
+> [Insert Predict Live screenshot here]
+
+### Dashboard - Pre-Game
+
+Visual champion selector inspired by the LoL client. Lock in 5 players per side, assign champions from a searchable grid with role filtering, and predict the winner before the match starts.
+
+> [Insert Pre-Game screenshot here]
+
+### Dashboard - Credits & Billing
+
+Balance panel with animated progress bar, usage summary, and credit packs. Payments go through Stripe Checkout. On success, a webhook automatically updates your credit balance - no manual refresh needed.
+
+> [Insert Billing screenshot here]
+
+---
+
+## Feature Engineering + Pipeline
+
+Before training, I had to create a few extra historical features from the raw CSV to make the model more accurate, like `team_winrate`, `player_winrate`, `player_kda`, `champion_winrate`, and `player_champ_winrate`. The idea is simple: instead of relying only on the current match snapshot, the model also learns from past performance. Categoricals are encoded with sklearn LabelEncoders stored inside the model artifact.
+
+**Data pipeline** (`backend/app/ml/pipeline.py`):
+
+```
+CSV (semicolon-separated)
+  ↓
+load_csv() → validation
+  ↓
+normalize_columns() → binary target
+  ↓
+create_splits() → stratified 60 / 20 / 20
+  ↓
+save_splits() → Parquet
+```
+
+**Why Parquet ?** Columnar, compressed, preserves types natively. Zero-friction hand-off via pandas + pyarrow.
+
+---
+
+## Models + Versioning
+
+I trained and evaluated three model families. Two made it to production. Every training run produces a versioned pair (model file + JSON metadata). The script auto-increments versions by scanning the `models/` folder. Each JSON stores the full evaluation plus a `deployment_ready` flag.
+
+Before reaching production, a model must pass `deployment_criteria.yaml`. If it fails, the version is saved but not promoted. When it passes, the script copies it to the production path and updates the metrics table in this README automatically.
+
+### Neural Network - Live In-Game Prediction
+
+24 features → 64 → 32 → 1, ReLU + Dropout(0.2), sigmoid output. Trained with BCELoss and Adam (lr 0.001) for 50 epochs, batch size 16. The checkpoint bundles weights, scaler, encoders, and feature names so inference is fully self-contained.
+
+### Random Forest - Pre-Game Draft Prediction
+
+200 trees, max depth 15, stratified 80/20 split. Uses only pre-game data (roster, champion picks, historical stats). The artifact stores the forest plus lookup tables so the pre-game endpoint resolves team names and retrieves winrates without touching the original CSV.
+
+### Current Production Metrics
+
+Updated automatically after each training run when the model passes the deployment quality gate.
 
 <!-- METRICS_START -->
 | Metric | Neural Network (v2) | Pre-Game RF (v2) |
@@ -95,15 +142,12 @@ Metrics are updated automatically after each training run when the model passes 
 
 ---
 
-Models and datasets are **not stored in Git**. They are versioned with [DVC](https://dvc.co) and stored in the companion [DagsHub repository](https://dagshub.com/Waffle639/LoL-AI).
+## DVC
 
-```bash
-# Download models and data after cloning
-dvc pull
-```
+The trained models, metadata, and raw data are versioned with DVC and stored in a DagsHub remote. That keeps the repo lightweight and makes the whole pipeline reproducible.
 
 | File | Tracked by |
-|---|---|
+|:---|:---|
 | `models/neural_net_vN.pth` | DVC → DagsHub |
 | `models/pregame_rf_vN.pkl` | DVC → DagsHub |
 | `metadata/*.json` | DVC → DagsHub |
@@ -111,214 +155,50 @@ dvc pull
 
 ---
 
-## API Endpoints
+## Docker & DevEx
 
-### Authentication — `POST /account/register` · `POST /account/login`
+Multi-stage Dockerfile (builder → production → test). Only inference artefacts are copied into the production image; training data and notebooks are mounted as volumes or excluded.
 
-Create an account or log in to retrieve your API key. All prediction and billing endpoints require the key in the `X-API-Key` header.
-
-<div align="center">
-  <img width="600" alt="Register and Login UI" src="https://github.com/user-attachments/assets/06b54187-152f-4e12-b69a-0e1a5415f445" />
-</div>
-
----
-### Prediction — `POST /predict`
-
-Send a full player/team snapshot and receive a win probability. Each successful call consumes 1 credit.
-
-> **`team_encoded`, `player_encoded`, `champion_encoded`** accept either the **name** (e.g. `"G2 Esports"`, `"Caps"`, `"Azir"`) or the **numeric code** (e.g. `42`, `130`, `7`). The API resolves names case-insensitively.
-
-```http
-POST /predict
-X-API-Key: lol_xxxxxxxxxxxx
-Content-Type: application/json
-
-{
-  "team_encoded": "G2 Esports",
-  "player_encoded": "Caps",
-  "champion_encoded": "Azir",
-  "side_encoded": 0,
-  "position_encoded": "mid",
-  "team_winrate": 0.65,
-  "player_winrate": 0.58,
-  "player_kda": 3.2,
-  "champion_winrate": 0.52,
-  "player_champ_winrate": 0.71,
-  "kills": 5, "deaths": 2, "assists": 8,
-  "teamkills": 25, "teamdeaths": 10,
-  "dragons": 3, "opp_dragons": 1,
-  "elders": 1, "opp_elders": 0,
-  "barons": 2, "opp_barons": 0,
-  "towers": 9, "opp_towers": 3,
-  "totalgold": 15000
-}
-```
-
-<details>
-<summary>Alternative: using numeric codes</summary>
-
-```json
-{
-  "team_encoded": 42,
-  "player_encoded": 130,
-  "champion_encoded": 7,
-  "side_encoded": 0,
-  "position_encoded": 2,
-  "team_winrate": 0.65,
-  "player_winrate": 0.58,
-  "player_kda": 3.2,
-  "champion_winrate": 0.52,
-  "player_champ_winrate": 0.71,
-  "kills": 5, "deaths": 2, "assists": 8,
-  "teamkills": 25, "teamdeaths": 10,
-  "dragons": 3, "opp_dragons": 1,
-  "elders": 1, "opp_elders": 0,
-  "barons": 2, "opp_barons": 0,
-  "towers": 9, "opp_towers": 3,
-  "totalgold": 15000
-}
-```
-</details>
-
-```json
-{
-  "result_label": "Victory",
-  "prediction": 1,
-  "probability": 0.8732,
-  "model_version": "1.0.0",
-  "credits_remaining": 19
-}
-```
-
----
-
-### Pre-Game Prediction — `POST /predict/pregame`
-
-Send only pre-game information (team, champion, player history) before the match starts and receive a win probability. Each successful call consumes 1 credit.
-
-> **`team_name`, `player`, `champion`** accept either the **name** (e.g. `"G2 Esports"`, `"Caps"`, `"Azir"`) or the **numeric code** (e.g. `42`, `130`, `7`). Names are matched case-insensitively.
-
-```http
-POST /predict/pregame
-X-API-Key: lol_xxxxxxxxxxxx
-Content-Type: application/json
-
-{
-  "team1": {
-    "team_name": "G2 Esports",
-    "side": "Blue",
-    "players": [
-      {"player": "BrokenBlade", "champion": "K'Sante",  "position": "top"},
-      {"player": "Yike",        "champion": "Vi",        "position": "jng"},
-      {"player": "Caps",        "champion": "Azir",      "position": "mid"},
-      {"player": "Hans Sama",   "champion": "Varus",     "position": "bot"},
-      {"player": "Mikyx",       "champion": "Zyra",      "position": "sup"}
-    ]
-  },
-  "team2": {
-    "team_name": "MAD Lions KOI",
-    "side": "Red",
-    "players": [
-      {"player": "Myrwn",     "champion": "Gwen",         "position": "top"},
-      {"player": "Elyoya",    "champion": "Viego",        "position": "jng"},
-      {"player": "Fresskowy", "champion": "Neeko",        "position": "mid"},
-      {"player": "Supa",      "champion": "Ashe",         "position": "bot"},
-      {"player": "Alvaro",    "champion": "Renata Glasc", "position": "sup"}
-    ]
-  }
-}
-```
-```json
-{
-  "team1": {"team_name": "G2 Esports",    "side": "Blue", "victory_prob": 58.34},
-  "team2": {"team_name": "MAD Lions KOI", "side": "Red",  "victory_prob": 41.66},
-  "predicted_winner": "G2 Esports",
-  "confidence": 58.34,
-  "model_version": "1.0.0"
-}
-```
-
----
-
-### Credits — `GET /billing/credits`
-
-Check how many prediction credits remain on your account.
-```http
-GET /billing/credits
-X-API-Key: lol_xxxxxxxxxxxx
-```
-```json
-{
-  "name": "username",
-  "credits_remaining": 18
-}
-```
-
----
-### Top-Up — `GET /billing/checkout`
-
-Redirects to a Stripe Checkout session to purchase additional credit bundles. On payment success, a webhook automatically credits the account.
-```http
-GET /billing/checkout
-X-API-Key: lol_xxxxxxxxxxxx
-```
-```json
-{
-  "checkout_url": "https://checkout.stripe.com/pay/cs_live_..."
-}
-```
-
----
-### Payment Success — `GET /success`
-
-Landing page shown after completed Stripe payment confirming credits have been added.
-
-<div align="center">
-  <img width="500" alt="Payment success page" src="https://github.com/user-attachments/assets/f597886a-4e1c-4ca9-8126-e2108563656e" />
-</div>
-
----
-## Quick Start
 ```bash
-cd backend
-pip install -r requirements.txt
-
-# Train models
-python -m app.ml.train
-
-# Start API
-uvicorn app.api:app --reload
-
-# In another terminal: start landing
-cd ../frontend/landing
-npm install
-npm run dev
-
-# In another terminal: start dashboard
-cd ../dashboard
-npm install
-npm run dev
+make setup     # venv + deps
+make dvc       # credentials + pull models
+make start-all # API + landing + dashboard
+make train     # both training pipelines
+make docker-up # Docker Compose
 ```
 
-Default local ports:
-- Backend API: `http://localhost:8000`
-- Landing app: `http://localhost:5173`
-- Dashboard app: `http://localhost:5174`
+---
+
+## Quick Start
+
+```bash
+git clone <repo> && cd LoL-AI
+dvc pull
+cp .env.example .env
+make setup
+make start-all
+```
+
+Ports:
+- API: `http://localhost:8000`
+- Landing: `http://localhost:5173`
+- Dashboard: `http://localhost:5174`
 
 ---
 
 ## Real Match Example
 
-**G2 Esports vs MAD Lions KOI** · `LOLTMNT05_13119`
+**G2 Esports vs MAD Lions KOI** - `LOLTMNT05_13119`
+
 ```
 G2 ESPORTS (Blue side)          MAD LIONS KOI (Red side)
-BrokenBlade  — K'Sante (top)    Myrwn      — Gwen (top)
-Yike         — Vi (jng)         Elyoya     — Viego (jng)
-Caps         — Azir (mid)       Fresskowy  — Neeko (mid)
-Hans Sama    — Varus (bot)      Supa       — Ashe (bot)
-Mikyx        — Zyra (sup)       Alvaro     — Renata Glasc (sup)
+BrokenBlade - K'Sante (top)    Myrwn      - Gwen (top)
+Yike        - Vi (jng)         Elyoya     - Viego (jng)
+Caps        - Azir (mid)       Fresskowy  - Neeko (mid)
+Hans Sama   - Varus (bot)      Supa       - Ashe (bot)
+Mikyx       - Zyra (sup)       Alvaro     - Renata Glasc (sup)
 
-→ Model prediction:  G2 77.8% — MAD 22.2%
+→ Model prediction:  G2 77.8% - MAD 22.2%
 → Actual winner:     G2 Esports ✓
 ```
 
@@ -326,10 +206,31 @@ Mikyx        — Zyra (sup)       Alvaro     — Renata Glasc (sup)
 
 ## Notebooks
 
-The three Jupyter notebooks document the full ML experimentation behind the API models.
+The three Jupyter notebooks document the full ML experimentation behind the API models. Kept as the single source of truth for hyperparameters.
 
-| Notebook | Model | Description |
-|---|---|---|
-| `backend/notebooks/IA_LoL_Prediccion_Pre_Game.ipynb` | RandomForestClassifier | Pre-game prediction using team winrates, player KDA, champion mastery. 200 trees, max_depth 15. |
-| `backend/notebooks/IA_LoL_NeuralNetwork.ipynb` | PyTorch Neural Network | In-game prediction from live stats. Architecture 24→64→32→1, dropout 0.2, Adam optimizer. |
-| `backend/notebooks/IA_LoL.ipynb` | SGDClassifier | Early experimentation notebook (reference only, not used in production). |
+| Notebook | Model |
+|:---|:---|
+| `backend/notebooks/IA_LoL_Prediccion_Pre_Game.ipynb` | RandomForestClassifier - pre-game |
+| `backend/notebooks/IA_LoL_NeuralNetwork.ipynb` | PyTorch Neural Network - in-game |
+| `backend/notebooks/IA_LoL.ipynb` | SGDClassifier - early experimentation |
+
+---
+
+## Things You Might Miss
+
+- **Auto-historical stats** - picking a team + player + champion auto-fills the form with real winrates from the 2024 dataset.
+- **Canvas draft animation** - the landing page draws the draft UI on a 2D canvas with real champion icons from Riot Data Dragon.
+- **Dual auth** - JWT for the dashboard, API keys for third-party scripts. Both coexist.
+- **Secure refresh rotation** - refresh tokens in httpOnly cookies, rotated on every use. Revoke all sessions at once.
+- **README that updates itself** - after `make train` the metrics table is rewritten from the production metadata JSONs.
+- **Non-root Docker** - production container runs as UID 1001.
+- **Rate limiting** - login attempts capped via slowapi.
+- **Credit-aware** - every prediction costs 1 credit. Stripe webhooks auto-refill the ledger.
+
+---
+
+## License
+
+MIT - feel free to fork, break, and rebuild.
+
+> Built with PyTorch, FastAPI, React, and too many hours of watching LoL esports.
